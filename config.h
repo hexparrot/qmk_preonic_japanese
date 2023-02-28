@@ -25,3 +25,10 @@
 #define HRGN_O 0x304A
 #define HRGN_U 0x3046
 #define HRGN_N 0x3093
+
+#define KTKN_A 0x30A2
+#define KTKN_E 0x30A8
+#define KTKN_I 0x30A4
+#define KTKN_O 0x30AA
+#define KTKN_U 0x30A6
+#define KTKN_N 0x30F3

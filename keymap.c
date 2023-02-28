@@ -1,6 +1,6 @@
 /* Copyright 2015-2021 Jack Humbert
  * Original keymap by William Dizon <wdchromium@gmail.com>
- * QWERTY + HIRAGANA
+ * QWERTY + HIRAGANA + KATAKANA
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,11 @@
 
 #define QWERTY 0
 #define HIRAGANA 1
+#define KATAKANA 2
 #define FUNCS 5
 #define GUIS 6
 #define HIRAGANA_SUPP 7
+#define KATAKANA_SUPP 8
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
@@ -62,8 +64,25 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_TRNS , KC_NO     , KC_NO  , KC_NO     , KC_NO  , KC_NO     , KC_TRNS, KC_NO     , KC_NO     , KC_NO     , UC(0x300C), UC(0x300D),
   KC_TRNS , KC_TRNS   , KC_TRNS, UC(0x3047), KC_TRNS, UC(0x3063), KC_TRNS, KC_TRNS   , UC(0x3045), UC(0x3043), UC(0x3049), KC_TRNS   ,
   KC_NO   , UC(0x3041), KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS   , KC_TRNS   , KC_TRNS   , UC(0x309A),
-  KC_TRNS , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, UC(0x3093), KC_TRNS   , UC(0x3008), UC(0x3009), KC_TRNS   ,
+  KC_TRNS , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, UC(HRGN_N), KC_TRNS   , UC(0x3008), UC(0x3009), KC_TRNS   ,
   KC_LCTL , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS   , KC_TRNS   , KC_TRNS   , KC_TRNS)  ,
+
+[KATAKANA] = LAYOUT_preonic_grid(
+  QK_GESC          , KC_1      , KC_2   , KC_3           , KC_4     , KC_5  , KC_DEL , KC_6      , KC_7      , KC_8      , KC_9      , KC_0      ,
+  KC_TAB           , KC_NO     , KC_W   , UC(KTKN_E)     , KC_R     , KC_T  , KC_BSPC, KC_Y      , UC(KTKN_U), UC(KTKN_I), UC(KTKN_O), KC_P      ,
+  MO(GUIS)         , UC(KTKN_A), KC_S   , KC_D           , KC_F     , KC_G  , KC_ENT , KC_H      , KC_J      , KC_K      , KC_NO     , UC(0x3099),
+  MO(KATAKANA_SUPP), KC_Z      , KC_NO  , KC_C           , KC_V     , KC_B  , KC_TAB , UC(KTKN_N), KC_M      , KC_COMM   , KC_DOT    , KC_SLSH   ,
+  KC_LCTL          , KC_LALT   , KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL    , KC_MINS   , DF(QWERTY), UC_NEXT   , KC_ENT)   ,
+
+/* KATAKANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
+   to size-shifted chars and square/angle brackets. */
+
+[KATAKANA_SUPP] = LAYOUT_preonic_grid(
+  KC_TRNS , KC_NO     , KC_NO  , KC_NO     , KC_NO  , KC_NO     , KC_TRNS, KC_NO     , KC_NO     , KC_NO     , UC(0x300C), UC(0x300D),
+  KC_TRNS , KC_TRNS   , KC_TRNS, UC(0x30A7), KC_TRNS, UC(0x30C3), KC_TRNS, KC_TRNS   , UC(0x30A5), UC(0x30A3), UC(0x30A9), KC_TRNS   ,
+  KC_NO   , UC(0x30A1), KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS   , KC_TRNS   , KC_TRNS   , UC(0x309A),
+  KC_TRNS , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, UC(KTKN_N), KC_TRNS   , UC(0x3008), UC(0x3009), KC_TRNS   ,
+  KC_LCTL , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, UC(0x003D), UC(0x2E40), KC_TRNS   , KC_TRNS   , KC_TRNS)  ,
 
 /* FUNCS provides all the remaining functional keys absent from a 60%;
    - Function keys align with their single digit counterparts. See QW
@@ -85,6 +104,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_NO  , KC_NO     , LGUI(KC_LBRC), LGUI(KC_UP)  , LGUI(KC_RBRC), KC_NO     , LGUI(KC_BSPC), KC_NO       , KC_NO     , KC_NO       , KC_LBRC     , KC_RBRC      ,
   KC_TRNS, KC_NO     , LGUI(KC_LEFT), LGUI(KC_DOWN), LGUI(KC_RGHT), KC_NO     , LGUI(KC_ENT) , KC_NO       , KC_NO     , KC_NO       , LGUI(KC_L)  , KC_QUOT      ,
   KC_LSFT, KC_NO     , KC_NO        , KC_NO        , KC_NO        , KC_NO     , LGUI(KC_TAB) , KC_NO       , KC_NO     , KC_NO       , KC_NO       , KC_BSLS      ,
-  KC_LCTL, KC_LALT   , KC_NO        , KC_TRNS      , KC_TRNS      , KC_NO     , KC_NO        , KC_NO       , KC_NO     , DF(HIRAGANA), DF(HIRAGANA), LGUI(KC_END)),
+  KC_LCTL, KC_LALT   , KC_NO        , KC_TRNS      , KC_TRNS      , KC_NO     , KC_NO        , KC_NO       , KC_NO     , DF(HIRAGANA), DF(KATAKANA), LGUI(KC_END)),
 
 };
