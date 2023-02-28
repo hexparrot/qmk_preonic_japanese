@@ -21,9 +21,9 @@
 
 #define QWERTY 0
 #define HIRAGANA 1
-#define FUNCS 2
-#define GUIS 3
-#define HIRAGANA_SUPP 4
+#define FUNCS 5
+#define GUIS 6
+#define HIRAGANA_SUPP 7
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
@@ -33,11 +33,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |------+------+------+------+------+------+------+------+------+------+------+------|
  * | Tab  |   Q  |   W  |   E  |   R  |   T  | Bksp |   Y  |   U  |   I  |   O  |  P   |
  * |------+------+------+------+------+-------------+------+------+------+------+------|
- * | MO(3)|   A  |   S  |   D  |   F  |   G  | Ent  |   H  |   J  |   K  |   L  |  ;   |
+ * | MO(5)|   A  |   S  |   D  |   F  |   G  | Ent  |   H  |   J  |   K  |   L  |  ;   |
  * |------+------+------+------+------+------|------+------+------+------+------+------|
  * | Shift|   Z  |   X  |   C  |   V  |   B  | Tab  |   N  |   M  |   ,  |   .  |  /   |
  * |------+------+------+------+------+------+------+------+------+------+------+------|
- * | Ctrl | Alt  | GUI  | LT(3)| MO(4)|    Space    |   +  |   -  |  Del |  Ins | Ent  |
+ * | Ctrl | Alt  | GUI  | LT(5)| MO(6)|    Space    |   +  |   -  |  Del |  Ins | Ent  |
  * `-----------------------------------------------------------------------------------'
  */
 
@@ -50,10 +50,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 [HIRAGANA] = LAYOUT_preonic_grid(
   QK_GESC          , KC_1      , KC_2   , KC_3           , KC_4     , KC_5  , KC_DEL , KC_6      , KC_7      , KC_8      , KC_9      , KC_0      ,
-  KC_TAB           , KC_NO     , KC_W   , UC(0x3048)     , KC_R     , KC_T  , KC_BSPC, KC_Y      , UC(0x3046), UC(0x3044), UC(0x304A), KC_P      ,
-  MO(GUIS)         , UC(0x3042), KC_S   , KC_D           , KC_F     , KC_G  , KC_ENT , KC_H      , KC_J      , KC_K      , KC_NO     , UC(0x3099),
-  MO(HIRAGANA_SUPP), KC_Z      , KC_NO  , KC_C           , KC_NO    , KC_B  , KC_TAB , UC(0x3093), KC_M      , KC_COMM   , KC_DOT    , KC_SLSH   ,
-  KC_LCTL          , KC_LALT   , KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL    , KC_MINS   , DF(QWERTY), KC_NO     , KC_ENT)   ,
+  KC_TAB           , KC_NO     , KC_W   , UC(HRGN_E)     , KC_R     , KC_T  , KC_BSPC, KC_Y      , UC(HRGN_U), UC(HRGN_I), UC(HRGN_O), KC_P      ,
+  MO(GUIS)         , UC(HRGN_A), KC_S   , KC_D           , KC_F     , KC_G  , KC_ENT , KC_H      , KC_J      , KC_K      , KC_NO     , UC(0x3099),
+  MO(HIRAGANA_SUPP), KC_Z      , KC_NO  , KC_C           , KC_NO    , KC_B  , KC_TAB , UC(HRGN_N), KC_M      , KC_COMM   , KC_DOT    , KC_SLSH   ,
+  KC_LCTL          , KC_LALT   , KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL    , KC_MINS   , DF(QWERTY), UC_NEXT   , KC_ENT)   ,
 
 /* HIRAGANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
@@ -81,10 +81,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    This configuration matches personal configuration of i3 tiling manager */
 
 [GUIS] = LAYOUT_preonic_grid(
-  KC_GRV , LGUI(KC_1), LGUI(KC_2)   , LGUI(KC_3)   , LGUI(KC_4)   , LGUI(KC_5), LGUI(KC_DEL) , LGUI(KC_6)  , LGUI(KC_7), LGUI(KC_8)  , LGUI(KC_9), LGUI(KC_0)   ,
-  KC_NO  , KC_NO     , LGUI(KC_LBRC), LGUI(KC_UP)  , LGUI(KC_RBRC), KC_NO     , LGUI(KC_BSPC), KC_NO       , KC_NO     , KC_NO       , KC_LBRC   , KC_RBRC      ,
-  KC_TRNS, KC_NO     , LGUI(KC_LEFT), LGUI(KC_DOWN), LGUI(KC_RGHT), KC_NO     , LGUI(KC_ENT) , KC_NO       , KC_NO     , KC_NO       , LGUI(KC_L), KC_QUOT      ,
-  KC_LSFT, KC_NO     , KC_NO        , KC_NO        , KC_NO        , KC_NO     , LGUI(KC_TAB) , KC_NO       , KC_NO     , KC_NO       , KC_NO     , KC_BSLS      ,
-  KC_LCTL, KC_LALT   , KC_NO        , KC_TRNS      , KC_TRNS      , KC_NO     , KC_NO        , KC_NO       , KC_NO     , DF(HIRAGANA), UC_NEXT   , LGUI(KC_END)),
+  KC_GRV , LGUI(KC_1), LGUI(KC_2)   , LGUI(KC_3)   , LGUI(KC_4)   , LGUI(KC_5), LGUI(KC_DEL) , LGUI(KC_6)  , LGUI(KC_7), LGUI(KC_8)  , LGUI(KC_9)  , LGUI(KC_0)   ,
+  KC_NO  , KC_NO     , LGUI(KC_LBRC), LGUI(KC_UP)  , LGUI(KC_RBRC), KC_NO     , LGUI(KC_BSPC), KC_NO       , KC_NO     , KC_NO       , KC_LBRC     , KC_RBRC      ,
+  KC_TRNS, KC_NO     , LGUI(KC_LEFT), LGUI(KC_DOWN), LGUI(KC_RGHT), KC_NO     , LGUI(KC_ENT) , KC_NO       , KC_NO     , KC_NO       , LGUI(KC_L)  , KC_QUOT      ,
+  KC_LSFT, KC_NO     , KC_NO        , KC_NO        , KC_NO        , KC_NO     , LGUI(KC_TAB) , KC_NO       , KC_NO     , KC_NO       , KC_NO       , KC_BSLS      ,
+  KC_LCTL, KC_LALT   , KC_NO        , KC_TRNS      , KC_TRNS      , KC_NO     , KC_NO        , KC_NO       , KC_NO     , DF(HIRAGANA), DF(HIRAGANA), LGUI(KC_END)),
 
 };
