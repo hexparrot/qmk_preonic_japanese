@@ -62,7 +62,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 [HIRAGANA_SUPP] = LAYOUT_preonic_grid(
   KC_TRNS , KC_NO        , KC_NO  , KC_NO        , KC_NO  , KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
-  KC_TRNS , KC_TRNS      , KC_TRNS, UC(HRGN_E_SM), KC_TRNS, UC(KTKN_TSU_SM), KC_TRNS, KC_TRNS   , UC(HRGN_U_SM), UC(HRGN_I_SM), UC(HRGN_O_SM), KC_TRNS   ,
+  KC_TRNS , KC_TRNS      , KC_TRNS, UC(HRGN_E_SM), KC_TRNS, UC(HRGN_TSU_SM), KC_TRNS, KC_TRNS   , UC(HRGN_U_SM), UC(HRGN_I_SM), UC(HRGN_O_SM), KC_TRNS   ,
   KC_NO   , UC(HRGN_A_SM), KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , UC(0x309A),
   KC_TRNS , KC_TRNS      , KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, UC(HRGN_N), KC_TRNS      , UC(0x3008)   , UC(0x3009)   , KC_TRNS   ,
   KC_LCTL , KC_TRNS      , KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , KC_TRNS)  ,
