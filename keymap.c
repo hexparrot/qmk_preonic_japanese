@@ -54,35 +54,35 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   QK_GESC          , KC_1      , KC_2   , KC_3           , KC_4     , KC_5  , KC_DEL , KC_6      , KC_7      , KC_8      , KC_9      , KC_0      ,
   KC_TAB           , KC_NO     , KC_W   , UC(HRGN_E)     , KC_R     , KC_T  , KC_BSPC, KC_Y      , UC(HRGN_U), UC(HRGN_I), UC(HRGN_O), KC_P      ,
   MO(GUIS)         , UC(HRGN_A), KC_S   , KC_D           , KC_F     , KC_G  , KC_ENT , KC_H      , KC_J      , KC_K      , KC_NO     , UC(0x3099),
-  MO(HIRAGANA_SUPP), KC_Z      , KC_NO  , KC_C           , KC_NO    , KC_B  , KC_TAB , UC(HRGN_N), KC_M      , KC_COMM   , KC_DOT    , KC_SLSH   ,
+  MO(HIRAGANA_SUPP), KC_Z      , KC_NO  , KC_C           , KC_V     , KC_B  , KC_TAB , UC(HRGN_N), KC_M      , KC_COMM   , KC_DOT    , KC_SLSH   ,
   KC_LCTL          , KC_LALT   , KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL    , KC_MINS   , DF(QWERTY), UC_NEXT   , KC_ENT)   ,
 
 /* HIRAGANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
 
 [HIRAGANA_SUPP] = LAYOUT_preonic_grid(
-  KC_TRNS , KC_NO     , KC_NO  , KC_NO     , KC_NO  , KC_NO     , KC_TRNS, KC_NO     , KC_NO     , KC_NO     , UC(0x300C), UC(0x300D),
-  KC_TRNS , KC_TRNS   , KC_TRNS, UC(0x3047), KC_TRNS, UC(0x3063), KC_TRNS, KC_TRNS   , UC(0x3045), UC(0x3043), UC(0x3049), KC_TRNS   ,
-  KC_NO   , UC(0x3041), KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS   , KC_TRNS   , KC_TRNS   , UC(0x309A),
-  KC_TRNS , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, UC(HRGN_N), KC_TRNS   , UC(0x3008), UC(0x3009), KC_TRNS   ,
-  KC_LCTL , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS   , KC_TRNS   , KC_TRNS   , KC_TRNS)  ,
+  KC_TRNS , KC_NO        , KC_NO  , KC_NO        , KC_NO  , KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
+  KC_TRNS , KC_TRNS      , KC_TRNS, UC(HRGN_E_SM), KC_TRNS, UC(KTKN_TSU_SM), KC_TRNS, KC_TRNS   , UC(HRGN_U_SM), UC(HRGN_I_SM), UC(HRGN_O_SM), KC_TRNS   ,
+  KC_NO   , UC(HRGN_A_SM), KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , UC(0x309A),
+  KC_TRNS , KC_TRNS      , KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, UC(HRGN_N), KC_TRNS      , UC(0x3008)   , UC(0x3009)   , KC_TRNS   ,
+  KC_LCTL , KC_TRNS      , KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , KC_TRNS)  ,
 
 [KATAKANA] = LAYOUT_preonic_grid(
   QK_GESC          , KC_1      , KC_2   , KC_3           , KC_4     , KC_5  , KC_DEL , KC_6      , KC_7      , KC_8      , KC_9      , KC_0      ,
   KC_TAB           , KC_NO     , KC_W   , UC(KTKN_E)     , KC_R     , KC_T  , KC_BSPC, KC_Y      , UC(KTKN_U), UC(KTKN_I), UC(KTKN_O), KC_P      ,
   MO(GUIS)         , UC(KTKN_A), KC_S   , KC_D           , KC_F     , KC_G  , KC_ENT , KC_H      , KC_J      , KC_K      , KC_NO     , UC(0x3099),
   MO(KATAKANA_SUPP), KC_Z      , KC_NO  , KC_C           , KC_V     , KC_B  , KC_TAB , UC(KTKN_N), KC_M      , KC_COMM   , KC_DOT    , KC_SLSH   ,
-  KC_LCTL          , KC_LALT   , KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL    , KC_MINS   , DF(QWERTY), UC_NEXT   , KC_ENT)   ,
+  KC_LCTL          , KC_LALT   , KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL    , UC(0x30FC), DF(QWERTY), UC_NEXT   , KC_ENT)   ,
 
 /* KATAKANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
 
 [KATAKANA_SUPP] = LAYOUT_preonic_grid(
-  KC_TRNS , KC_NO     , KC_NO  , KC_NO     , KC_NO  , KC_NO     , KC_TRNS, KC_NO     , KC_NO     , KC_NO     , UC(0x300C), UC(0x300D),
-  KC_TRNS , KC_TRNS   , KC_TRNS, UC(0x30A7), KC_TRNS, UC(0x30C3), KC_TRNS, KC_TRNS   , UC(0x30A5), UC(0x30A3), UC(0x30A9), KC_TRNS   ,
-  KC_NO   , UC(0x30A1), KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS   , KC_TRNS   , KC_TRNS   , UC(0x309A),
-  KC_TRNS , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, UC(KTKN_N), KC_TRNS   , UC(0x3008), UC(0x3009), KC_TRNS   ,
-  KC_LCTL , KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, KC_TRNS   , KC_TRNS, UC(0x003D), UC(0x2E40), KC_TRNS   , KC_TRNS   , KC_TRNS)  ,
+  KC_TRNS , KC_NO        , KC_NO  , KC_NO        , KC_NO  , KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
+  KC_TRNS , KC_TRNS      , KC_TRNS, UC(KTKN_E_SM), KC_TRNS, UC(KTKN_TSU_SM), KC_TRNS, KC_TRNS   , UC(KTKN_U_SM), UC(KTKN_I_SM), UC(KTKN_O_SM), KC_TRNS   ,
+  KC_NO   , UC(KTKN_A_SM), KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , UC(0x309A),
+  KC_TRNS , KC_TRNS      , KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, UC(KTKN_N), KC_TRNS      , UC(0x3008)   , UC(0x3009)   , KC_TRNS   ,
+  KC_LCTL , KC_TRNS      , KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, UC(0x003D), UC(0x2E40)   , KC_TRNS      , KC_TRNS      , KC_TRNS)  ,
 
 /* FUNCS provides all the remaining functional keys absent from a 60%;
    - Function keys align with their single digit counterparts. See QW

@@ -26,9 +26,23 @@
 #define HRGN_U 0x3046
 #define HRGN_N 0x3093
 
+#define HRGN_A_SM 0x3041
+#define HRGN_E_SM 0x3047
+#define HRGN_I_SM 0x3043
+#define HRGN_O_SM 0x3049
+#define HRGN_U_SM 0x3045
+#define HRGN_TSU_SM 0x3063
+
 #define KTKN_A 0x30A2
 #define KTKN_E 0x30A8
 #define KTKN_I 0x30A4
 #define KTKN_O 0x30AA
 #define KTKN_U 0x30A6
 #define KTKN_N 0x30F3
+
+#define KTKN_A_SM 0x30A1
+#define KTKN_E_SM 0x30A7
+#define KTKN_I_SM 0x30A3
+#define KTKN_O_SM 0x30A9
+#define KTKN_U_SM 0x30A5
+#define KTKN_TSU_SM 0x30C3
