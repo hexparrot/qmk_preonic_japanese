@@ -33,24 +33,247 @@ enum {
   ENG_GO
 };
 
+// Start Recent Key Rememering:
+// https://getreuer.info/posts/keyboards/triggers/index.html#based-on-previously-typed-keys
+#include <string.h>
+
+#define TIMEOUT_MS 5000  // Timeout in milliseconds.
+#define RECENT_SIZE 3    // Number of keys in `recent` buffer.
+
+static uint16_t recent[RECENT_SIZE] = {KC_NO};
+static uint16_t deadline = 0;
+
+static void clear_recent_keys(void) {
+  memset(recent, 0, sizeof(recent));  // Set all zeros (KC_NO).
+}
+
+// Handles one event. Returns true if the key was appended to `recent`.
+static bool update_recent_keys(uint16_t keycode, keyrecord_t* record) {
+  if (!record->event.pressed) { return false; }
+
+  if (((get_mods() | get_oneshot_mods()) & ~MOD_MASK_SHIFT) != 0) {
+    clear_recent_keys();  // Avoid interfering with hotkeys.
+    return false;
+  }
+
+  switch (keycode) {
+    case KC_A ... KC_SLASH:  // These keys type letters, digits, symbols.
+      break;
+    case UC(0x3040) ... UC(0x30FF):  // Hiragana + Katakana codepoints
+      break;
+    case KC_LSFT:  // These keys don't type anything on their own.
+    case KC_RSFT:
+    case QK_ONE_SHOT_MOD ... QK_ONE_SHOT_MOD_MAX:
+      return false;
+
+    default:  // Avoid acting otherwise, particularly on navigation keys.
+      clear_recent_keys();
+      return false;
+  }
+
+  // Slide the buffer left by one element.
+  memmove(recent, recent + 1, (RECENT_SIZE - 1) * sizeof(*recent));
+
+  recent[RECENT_SIZE - 1] = keycode;
+  deadline = record->event.time + TIMEOUT_MS;
+  return true;
+}
+
+void matrix_scan_user(void) {
+  if (recent[RECENT_SIZE - 1] && timer_expired(timer_read(), deadline)) {
+    clear_recent_keys();  // Timed out; clear the buffer.
+  }
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+  if (update_recent_keys(keycode, record)) {
+    if (record->event.pressed) {
+      if (IS_LAYER_ON(HIRAGANA) ) {
+        if (recent[RECENT_SIZE - 3] == KC_K &&
+            recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("きゃ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("きょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("きゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == KC_S &&
+                   recent[RECENT_SIZE - 2] == KC_H) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("しゃ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("し");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("しょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("いゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == KC_C &&
+                   recent[RECENT_SIZE - 2] == KC_H) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ちゃ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("ち");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ちょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ちゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == UC(HRGN_N) &&
+                   recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              register_code(KC_BSPC);
+              send_unicode_string("にゃ");
+              break;
+            case UC(HRGN_O):
+              register_code(KC_BSPC);
+              send_unicode_string("にょ");
+              break;
+            case UC(HRGN_U):
+              register_code(KC_BSPC);
+              send_unicode_string("にゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == KC_H &&
+                   recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ひゃ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ひょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ひゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == KC_M &&
+                   recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("みゃ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("みょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("みゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == KC_R &&
+                   recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("りゃ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("りょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("りゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == KC_G &&
+                   recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ぎゃ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ぎょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ぎゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == KC_B &&
+                   recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("びゃ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("びょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("びゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 3] == KC_P &&
+                   recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ぴゃ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ぴょ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ぴゅ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } // end switch
+      } // end hiragana layer check
+    } // end record.pressed
+  } // end update_recent_keys
+
   switch (keycode) {
   case HRGA_GO:
     if (record->event.pressed) {
       layer_clear();
       layer_on(HIRAGANA);
+      return false;
     }
     break;
   case KTKN_GO:
     if (record->event.pressed) {
       layer_clear();
       layer_on(KATAKANA);
+      return false;
     }
     break;
   case ENG_GO:
     if (record->event.pressed) {
       layer_clear();
+    } else {
       layer_on(QWERTY);
+      return false;
     }
     break;
   case KC_K:
@@ -80,6 +303,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
     break;
   }
+
   return true;
 };
 
