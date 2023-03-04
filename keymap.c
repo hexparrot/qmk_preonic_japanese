@@ -89,6 +89,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   if (update_recent_keys(keycode, record)) {
     if (record->event.pressed) {
       if (IS_LAYER_ON(HIRAGANA) ) {
+
+        // START 3 CHARACTER SEQUENCES
         if (recent[RECENT_SIZE - 3] == KC_K &&
             recent[RECENT_SIZE - 2] == KC_Y) {
             switch (keycode) {
@@ -248,6 +250,278 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
           unregister_code(keycode);
           return false;
+
+        // START 2 CHAR SEQUENCES
+        } else if (recent[RECENT_SIZE - 2] == KC_K) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("か");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("け");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("き");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("こ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("く");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_G) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ぐ");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("げ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("ぎ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ご");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ぐ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_S) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("さ");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("せ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("し");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("そ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("す");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_Z) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ざ");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("ぜ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("じ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ぞ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ず");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_T) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("た");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("て");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("ち");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("と");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("つ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_D) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("だ");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("で");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("ぢ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ど");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("づ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == UC(HRGN_N)) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              tap_code(KC_BSPC);
+              send_unicode_string("な");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("ね");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("に");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("の");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ぬ");
+              break;
+            case UC(HRGN_N):
+              send_unicode_string("ん");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_H) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("は");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("へ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("ひ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ほ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ふ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_B) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ぶ");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("べ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("び");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ぼ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ぶ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_P) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ぱ");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("ぺ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("ぴ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("ぽ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ぷ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_M) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ま");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("め");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("み");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("も");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("む");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_Y) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("や");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("よ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("ゆ");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_R) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("ら");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("れ");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("り");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("お");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("る");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_W) {
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("わ");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("を");
+              break;
+            }
+          unregister_code(keycode);
+          return false;
+
         } // end switch
       } // end hiragana layer check
     } // end record.pressed
