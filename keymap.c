@@ -379,15 +379,19 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
               send_unicode_string("な");
               break;
             case UC(HRGN_E):
+              tap_code(KC_BSPC);
               send_unicode_string("ね");
               break;
             case UC(HRGN_I):
+              tap_code(KC_BSPC);
               send_unicode_string("に");
               break;
             case UC(HRGN_O):
+              tap_code(KC_BSPC);
               send_unicode_string("の");
               break;
             case UC(HRGN_U):
+              tap_code(KC_BSPC);
               send_unicode_string("ぬ");
               break;
             case UC(HRGN_N):
