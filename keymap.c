@@ -237,6 +237,84 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           return false;
         }
 
+        // T - SERIES
+	// Position T-Series before S-Series to ensure TSU can be captured.
+        if (recent[RECENT_SIZE - 3] == KC_T) {
+          if (recent[RECENT_SIZE - 2] == KC_T) {
+            // MATCH TT_
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("った");
+              break;
+            case UC(HRGN_E):
+              send_unicode_string("って");
+              break;
+            case UC(HRGN_I):
+              send_unicode_string("っち");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("っと");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("っつ");
+              break;
+            case KC_S:
+              send_unicode_string("っつ");
+              break;
+            }
+          } else if (recent[RECENT_SIZE - 2] == KC_S) {
+            // MATCH TS_
+            switch (keycode) {
+            case UC(HRGN_U):
+              send_unicode_string("つ");
+              break;
+            case UC(HRGN_U_SM):
+              send_unicode_string("っ");
+              break;
+            default:
+              send_unicode_string("っ");
+              break;
+            }
+          }
+          // any unmatched t** 3char clears
+          unregister_code(keycode);
+          clear_recent_keys();
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_T) {
+          // if T isn't 3rd most recent, is it still 2nd most recent?
+          unregister_code(keycode);
+          switch (keycode) {
+          case UC(HRGN_A):
+            send_unicode_string("た");
+            clear_recent_keys();
+            break;
+          case UC(HRGN_E):
+            send_unicode_string("て");
+            clear_recent_keys();
+            break;
+          case UC(HRGN_I):
+            send_unicode_string("ち");
+            clear_recent_keys();
+            break;
+          case UC(HRGN_O):
+            send_unicode_string("と");
+            clear_recent_keys();
+            break;
+          case UC(HRGN_U):
+            send_unicode_string("つ");
+            clear_recent_keys();
+            break;
+          case KC_T:
+          case KC_S:
+            // T,S exit immediately *without* clear to permit access to above 3 char stanza
+            return false;
+          default:
+            // any unmatched t* 2char clears
+            clear_recent_keys();
+          }
+          return false;
+        }
+
         // S - SERIES
         if (recent[RECENT_SIZE - 3] == KC_S) {
           if (recent[RECENT_SIZE - 2] == KC_S) {
@@ -436,83 +514,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return false;
           default:
             // any unmatched j* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // T - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_T) {
-          if (recent[RECENT_SIZE - 2] == KC_T) {
-            // MATCH TT_
-            switch (keycode) {
-            case UC(HRGN_A):
-              send_unicode_string("った");
-              break;
-            case UC(HRGN_E):
-              send_unicode_string("って");
-              break;
-            case UC(HRGN_I):
-              send_unicode_string("っち");
-              break;
-            case UC(HRGN_O):
-              send_unicode_string("っと");
-              break;
-            case UC(HRGN_U):
-              send_unicode_string("っつ");
-              break;
-            case KC_S:
-              send_unicode_string("っつ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_S) {
-            // MATCH TS_
-            switch (keycode) {
-            case UC(HRGN_U):
-              send_unicode_string("つ");
-              break;
-            case UC(HRGN_U_SM):
-              send_unicode_string("っ");
-              break;
-            default:
-              send_unicode_string("っ");
-              break;
-            }
-          }
-          // any unmatched t** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_T) {
-          // if T isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            send_unicode_string("た");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            send_unicode_string("て");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            send_unicode_string("ち");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            send_unicode_string("と");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            send_unicode_string("つ");
-            clear_recent_keys();
-            break;
-          case KC_T:
-          case KC_S:
-            // T,S exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched t* 2char clears
             clear_recent_keys();
           }
           return false;
