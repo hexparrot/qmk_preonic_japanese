@@ -58,7 +58,7 @@ static bool update_recent_keys(uint16_t keycode, keyrecord_t* record) {
   switch (keycode) {
     case KC_A ... KC_SLASH:  // These keys type letters, digits, symbols.
       break;
-    case UC(0x3040) ... UC(0x30FF):  // Hiragana + Katakana codepoints
+    case UC(0x3040) ... UC(0x767E):  // Hiragana + Katakana, plus numerals
       break;
     case KC_LSFT:  // These keys don't type anything on their own.
     case KC_RSFT:
@@ -1194,15 +1194,50 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           return false;
         }
 
-      /* END HIRAGANA / START KATAKANA HERE
-      ****************************************
-      ****************************************
-      ****************************************
-      ****************************************
-      ****************************************
-      ****************************************
-      ************************************* */
+        // NUM - SERIES
+        if (recent[RECENT_SIZE - 3] == UC(JP_NUM_1)) {
+          if (recent[RECENT_SIZE - 2] == UC(HRGN_E)) {
+            // MATCH 1E_
+            tap_code(KC_BSPC);
+            tap_code(KC_BSPC);
+            // right or wrong, backspace. 1,E have already been
+            // pressed, entered, so they should always get removed
+            switch (keycode) {
+            case UC(JP_NUM_1):
+              send_unicode_string("十");
+              break;
+            case UC(JP_NUM_2):
+              send_unicode_string("百");
+              break;
+            case UC(JP_NUM_3):
+              send_unicode_string("千");
+              break;
+            case UC(JP_NUM_4):
+              send_unicode_string("万");
+              break;
+            case UC(JP_NUM_8):
+              send_unicode_string("億");
+              break;
+            case KC_W:
+              send_unicode_string("兆");
+              break;
+            }
+            unregister_code(keycode);
+            clear_recent_keys();
+            return false;
+          } // end e-press
+
+        }
+        // END HIRAGANA
       } else if (IS_LAYER_ON(KATAKANA) ) {
+        /* START KATAKANA HERE
+        ****************************************
+        ****************************************
+        ****************************************
+        ****************************************
+        ****************************************
+        ****************************************
+        ************************************* */
         // K - SERIES
         if (recent[RECENT_SIZE - 3] == KC_K) {
           if (recent[RECENT_SIZE - 2] == KC_K) {
@@ -2314,6 +2349,41 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             clear_recent_keys();
           }
           return false;
+        }
+
+        // NUM - SERIES
+        if (recent[RECENT_SIZE - 3] == UC(JP_NUM_1)) {
+          if (recent[RECENT_SIZE - 2] == UC(KTKN_E)) {
+            // MATCH 1E_
+            tap_code(KC_BSPC);
+            tap_code(KC_BSPC);
+            // right or wrong, backspace. 1,E have already been
+            // pressed, entered, so they should always get removed
+            switch (keycode) {
+            case UC(JP_NUM_1):
+              send_unicode_string("十");
+              break;
+            case UC(JP_NUM_2):
+              send_unicode_string("百");
+              break;
+            case UC(JP_NUM_3):
+              send_unicode_string("千");
+              break;
+            case UC(JP_NUM_4):
+              send_unicode_string("万");
+              break;
+            case UC(JP_NUM_8):
+              send_unicode_string("億");
+              break;
+            case KC_W:
+              send_unicode_string("兆");
+              break;
+            }
+            unregister_code(keycode);
+            clear_recent_keys();
+            return false;
+          } // end e-press
+
         }
 
       } // end katakana layer check
