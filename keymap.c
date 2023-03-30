@@ -542,11 +542,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           clear_recent_keys();
           return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_C) {
-          // if C isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
         }
 
         // D - SERIES
@@ -1658,11 +1653,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
           }
           // any unmatched c** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_C) {
-          // if C isn't 3rd most recent, is it still 2nd most recent?
           unregister_code(keycode);
           clear_recent_keys();
           return false;
