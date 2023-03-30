@@ -46,3 +46,19 @@
 #define KTKN_O_SM 0x30A9
 #define KTKN_U_SM 0x30A5
 #define KTKN_TSU_SM 0x30C3
+
+#define JP_NUM_1 0x4E00
+#define JP_NUM_2 0x4E8C
+#define JP_NUM_3 0x4E09
+#define JP_NUM_4 0x56DB
+#define JP_NUM_5 0x4E94
+#define JP_NUM_6 0x516D
+#define JP_NUM_7 0x4E03
+#define JP_NUM_8 0x516B
+#define JP_NUM_9 0x4E5D
+#define JP_NUM_10 0x5341
+#define JP_NUM_1E2 0x767E
+#define JP_NUM_1E3 0x5343
+#define JP_NUM_1E4 0x4E07
+#define JP_NUM_1E8 0x5104
+#define JP_NUM_1E12 0x5146

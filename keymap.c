@@ -2399,11 +2399,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_LCTL , KC_LALT, KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL, KC_MINS, KC_DEL , KC_INS, KC_ENT),
 
 [HIRAGANA] = LAYOUT_preonic_grid(
-  QK_GESC          , KC_1      , KC_2   , KC_3           , KC_4     , KC_5  , KC_DEL , KC_6      , KC_7      , KC_8      , KC_9      , KC_0      ,
-  KC_TAB           , KC_NO     , KC_W   , UC(HRGN_E)     , KC_R     , KC_T  , KC_BSPC, KC_Y      , UC(HRGN_U), UC(HRGN_I), UC(HRGN_O), KC_P      ,
-  MO(GUIS)         , UC(HRGN_A), KC_S   , KC_D           , KC_F     , KC_G  , KC_ENT , KC_H      , KC_J      , KC_K      , KC_NO     , UC(0x3099),
-  MO(HIRAGANA_SUPP), KC_Z      , KC_NO  , KC_C           , KC_V     , KC_B  , KC_TAB , UC(HRGN_N), KC_M      , KC_COMM   , KC_DOT    , KC_SLSH   ,
-  KC_LCTL          , KC_LALT   , KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL    , KC_MINS   , ENG_GO    , UC_NEXT   , KC_ENT)   ,
+  QK_GESC          , UC(JP_NUM_1), UC(JP_NUM_2), UC(JP_NUM_3)   , UC(JP_NUM_4), UC(JP_NUM_5), KC_DEL , UC(JP_NUM_6), UC(JP_NUM_7), UC(JP_NUM_8), UC(JP_NUM_9), UC(JP_NUM_10),
+  KC_TAB           , KC_NO       , KC_W        , UC(HRGN_E)     , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(HRGN_U)  , UC(HRGN_I)  , UC(HRGN_O)  , KC_P         ,
+  MO(GUIS)         , UC(HRGN_A)  , KC_S        , KC_D           , KC_F        , KC_G        , KC_ENT , KC_H        , KC_J        , KC_K        , KC_NO       , UC(0x3099)   ,
+  MO(HIRAGANA_SUPP), KC_Z        , KC_NO       , KC_C           , KC_V        , KC_B        , KC_TAB , UC(HRGN_N)  , KC_M        , KC_COMM     , KC_DOT      , KC_SLSH      ,
+  KC_LCTL          , KC_LALT     , KC_LGUI     , LT(GUIS,KC_APP), MO(FUNCS)   , KC_SPC      , KC_SPC , KC_EQL      , KC_MINS     , ENG_GO      , UC_NEXT     , KC_ENT)      ,
 
 /* HIRAGANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
@@ -2416,11 +2416,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_LCTL , KC_TRNS      , KC_TRNS, KC_TRNS      , KC_TRNS, KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , KC_TRNS)  ,
 
 [KATAKANA] = LAYOUT_preonic_grid(
-  QK_GESC          , KC_1      , KC_2   , KC_3           , KC_4     , KC_5  , KC_DEL , KC_6      , KC_7      , KC_8      , KC_9      , KC_0      ,
-  KC_TAB           , KC_NO     , KC_W   , UC(KTKN_E)     , KC_R     , KC_T  , KC_BSPC, KC_Y      , UC(KTKN_U), UC(KTKN_I), UC(KTKN_O), KC_P      ,
-  MO(GUIS)         , UC(KTKN_A), KC_S   , KC_D           , KC_F     , KC_G  , KC_ENT , KC_H      , KC_J      , KC_K      , KC_NO     , UC(0x3099),
-  MO(KATAKANA_SUPP), KC_Z      , KC_NO  , KC_C           , KC_V     , KC_B  , KC_TAB , UC(KTKN_N), KC_M      , KC_COMM   , KC_DOT    , KC_SLSH   ,
-  KC_LCTL          , KC_LALT   , KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL    , UC(0x30FC), ENG_GO    , UC_NEXT   , KC_ENT)   ,
+  QK_GESC          , UC(JP_NUM_1), UC(JP_NUM_2), UC(JP_NUM_3)   , UC(JP_NUM_4), UC(JP_NUM_5), KC_DEL , UC(JP_NUM_6), UC(JP_NUM_7), UC(JP_NUM_8), UC(JP_NUM_9), UC(JP_NUM_10),
+  KC_TAB           , KC_NO       , KC_W        , UC(KTKN_E)     , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(KTKN_U)  , UC(KTKN_I)  , UC(KTKN_O)  , KC_P         ,
+  MO(GUIS)         , UC(KTKN_A)  , KC_S        , KC_D           , KC_F        , KC_G        , KC_ENT , KC_H        , KC_J        , KC_K        , KC_NO       , UC(0x3099)   ,
+  MO(KATAKANA_SUPP), KC_Z        , KC_NO       , KC_C           , KC_V        , KC_B        , KC_TAB , UC(KTKN_N)  , KC_M        , KC_COMM     , KC_DOT      , KC_SLSH      ,
+  KC_LCTL          , KC_LALT     , KC_LGUI     , LT(GUIS,KC_APP), MO(FUNCS)   , KC_SPC      , KC_SPC , KC_EQL      , UC(0x30FC)  , ENG_GO      , UC_NEXT     , KC_ENT)      ,
 
 /* KATAKANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
