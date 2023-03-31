@@ -2480,8 +2480,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 /* Usage of the Hiragana/Katakana Layers:
    - Turn on the respective layer with GUI+DEL or GUI+INS
-   - Alternate between Windows/Linux input modes with INS
-   - Press DEL to return to English
+   - Alternate between Windows/Linux input modes with DEL
+   - Press INS to return to English
    - Japanese numerals along top row are 1-10 (いち-十)
    - Shift+9, Shift+0 (parens) will create 「」
    - Shift+<, Shift+> (square brackets) will create 〈〉
@@ -2499,7 +2499,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_TAB           , KC_NO       , KC_W        , UC(HRGN_E)     , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(HRGN_U)  , UC(HRGN_I)  , UC(HRGN_O)  , KC_P         ,
   MO(GUIS)         , UC(HRGN_A)  , KC_S        , KC_D           , KC_F        , KC_G        , KC_ENT , KC_H        , KC_J        , KC_K        , KC_NO       , UC(0x3099)   ,
   MO(HIRAGANA_SUPP), KC_Z        , KC_NO       , KC_C           , KC_V        , KC_B        , KC_TAB , UC(HRGN_N)  , KC_M        , KC_COMM     , KC_DOT      , KC_SLSH      ,
-  KC_LCTL          , KC_LALT     , KC_LGUI     , LT(GUIS,KC_APP), MO(FUNCS)   , KC_SPC      , KC_SPC , KC_EQL      , KC_MINS     , ENG_GO      , UC_NEXT     , KC_ENT)      ,
+  KC_LCTL          , KC_LALT     , KC_LGUI     , LT(GUIS,KC_APP), MO(FUNCS)   , KC_SPC      , KC_SPC , KC_EQL      , KC_MINS     , UC_NEXT     , ENG_GO      , KC_ENT)      ,
 
 /* HIRAGANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
@@ -2516,7 +2516,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_TAB           , KC_NO       , KC_W        , UC(KTKN_E)     , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(KTKN_U)  , UC(KTKN_I)  , UC(KTKN_O)  , KC_P         ,
   MO(GUIS)         , UC(KTKN_A)  , KC_S        , KC_D           , KC_F        , KC_G        , KC_ENT , KC_H        , KC_J        , KC_K        , KC_NO       , UC(0x3099)   ,
   MO(KATAKANA_SUPP), KC_Z        , KC_NO       , KC_C           , KC_V        , KC_B        , KC_TAB , UC(KTKN_N)  , KC_M        , KC_COMM     , KC_DOT      , KC_SLSH      ,
-  KC_LCTL          , KC_LALT     , KC_LGUI     , LT(GUIS,KC_APP), MO(FUNCS)   , KC_SPC      , KC_SPC , KC_EQL      , UC(0x30FC)  , ENG_GO      , UC_NEXT     , KC_ENT)      ,
+  KC_LCTL          , KC_LALT     , KC_LGUI     , LT(GUIS,KC_APP), MO(FUNCS)   , KC_SPC      , KC_SPC , KC_EQL      , UC(0x30FC)  , UC_NEXT     , ENG_GO      , KC_ENT)      ,
 
 /* KATAKANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
