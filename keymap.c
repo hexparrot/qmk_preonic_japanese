@@ -1188,6 +1188,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             send_unicode_string("ゆ");
             clear_recent_keys();
             break;
+          case UC(HRGN_A_SM):
+            send_unicode_string("ゃ");
+            clear_recent_keys();
+            break;
+          case UC(HRGN_O_SM):
+            send_unicode_string("ょ");
+            clear_recent_keys();
+            break;
+          case UC(HRGN_U_SM):
+            send_unicode_string("ゅ");
+            clear_recent_keys();
+            break;
           case KC_Y:
             // Y exit immediately *without* clear to permit access to above 3 char stanza
             return false;
@@ -2346,6 +2358,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             break;
           case UC(KTKN_U):
             send_unicode_string("ユ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_A_SM):
+            send_unicode_string("ャ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_O_SM):
+            send_unicode_string("ョ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_U_SM):
+            send_unicode_string("ュ");
             clear_recent_keys();
             break;
           case KC_Y:
