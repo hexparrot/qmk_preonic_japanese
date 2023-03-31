@@ -58,7 +58,8 @@ static bool update_recent_keys(uint16_t keycode, keyrecord_t* record) {
   switch (keycode) {
     case KC_A ... KC_SLASH:  // These keys type letters, digits, symbols.
       break;
-    case UC(0x3040) ... UC(0x767E):  // Hiragana + Katakana, plus numerals
+    case UC(0x3040) ... UC(0x30FF): // Hiragana + Katakana
+    case UC(0x4E00) ... UC(0x767E): // plus numerals
       break;
     case KC_LSFT:  // These keys don't type anything on their own.
     case KC_RSFT:
@@ -1035,52 +1036,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           return false;
         }
 
-        // Y - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_Y) {
-          if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH YY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              send_unicode_string("っや");
-              break;
-            case UC(HRGN_O):
-              send_unicode_string("っよ");
-              break;
-            case UC(HRGN_U):
-              send_unicode_string("っゆ");
-              break;
-            }
-          }
-          // any unmatched f** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-          // if Y isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            send_unicode_string("や");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            send_unicode_string("よ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            send_unicode_string("ゆ");
-            clear_recent_keys();
-            break;
-          case KC_Y:
-            // Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched y* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
         // R - SERIES
         if (recent[RECENT_SIZE - 3] == KC_R) {
           if (recent[RECENT_SIZE - 2] == KC_R) {
@@ -1189,6 +1144,55 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return false;
           default:
             // any unmatched w* 2char clears
+            clear_recent_keys();
+          }
+          return false;
+        }
+
+        // Y - SERIES
+        /* Needs to come after all other letters that might use Y
+        // Such as Ryo, Mya... to ensure proper execution that this
+        // does not clear recent keys on 2nd key Y */
+        if (recent[RECENT_SIZE - 3] == KC_Y) {
+          if (recent[RECENT_SIZE - 2] == KC_Y) {
+            // MATCH YY_
+            switch (keycode) {
+            case UC(HRGN_A):
+              send_unicode_string("っや");
+              break;
+            case UC(HRGN_O):
+              send_unicode_string("っよ");
+              break;
+            case UC(HRGN_U):
+              send_unicode_string("っゆ");
+              break;
+            }
+          }
+          // any unmatched f** 3char clears
+          unregister_code(keycode);
+          clear_recent_keys();
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_Y) {
+          // if Y isn't 3rd most recent, is it still 2nd most recent?
+          unregister_code(keycode);
+          switch (keycode) {
+          case UC(HRGN_A):
+            send_unicode_string("や");
+            clear_recent_keys();
+            break;
+          case UC(HRGN_O):
+            send_unicode_string("よ");
+            clear_recent_keys();
+            break;
+          case UC(HRGN_U):
+            send_unicode_string("ゆ");
+            clear_recent_keys();
+            break;
+          case KC_Y:
+            // Y exit immediately *without* clear to permit access to above 3 char stanza
+            return false;
+          default:
+            // any unmatched y* 2char clears
             clear_recent_keys();
           }
           return false;
