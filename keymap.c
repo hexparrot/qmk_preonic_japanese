@@ -1207,6 +1207,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             // right or wrong, backspace. 1,E have already been
             // pressed, entered, so they should always get removed
             switch (keycode) {
+            case UC(JP_NUM_10):
+              send_unicode_string("〇"); // maru/zero for 1e0 despite the math
+              break;
             case UC(JP_NUM_1):
               send_unicode_string("十");
               break;
