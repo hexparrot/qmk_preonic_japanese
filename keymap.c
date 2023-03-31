@@ -2471,6 +2471,22 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_LSFT , KC_Z   , KC_X   , KC_C           , KC_V     , KC_B  , KC_TAB , KC_N  , KC_M   , KC_COMM, KC_DOT, KC_SLSH,
   KC_LCTL , KC_LALT, KC_LGUI, LT(GUIS,KC_APP), MO(FUNCS), KC_SPC, KC_SPC , KC_EQL, KC_MINS, KC_DEL , KC_INS, KC_ENT),
 
+/* Usage of the Hiragana/Katakana Layers:
+   - Turn on the respective layer with GUI+DEL or GUI+INS
+   - Alternate between Windows/Linux input modes with INS
+   - Press DEL to return to English
+   - Japanese numerals along top row are 1-10 (いち-十)
+   - Shift+9, Shift+0 (parens) will create 「」
+   - Shift+<, Shift+> (square brackets) will create 〈〉
+   - PLACE NUMBERS e.g., 10, 100, 1000 can be written in kanji
+     by using the 1e_ syntax, representing how many zeroes in the number:
+     - 1e1 -> 十 (10), 1e2 -> 百 (100), 1e8 -> 億
+     - The only exception: 1e0 -> 〇
+       (十 is far more common than 〇, otherwise these would be reversed
+        and 〇 would be on the 0 and 1e1 would be 10)
+   - CHARACTERS e.g., "ha" -> は
+*/
+
 [HIRAGANA] = LAYOUT_preonic_grid(
   QK_GESC          , UC(JP_NUM_1), UC(JP_NUM_2), UC(JP_NUM_3)   , UC(JP_NUM_4), UC(JP_NUM_5), KC_DEL , UC(JP_NUM_6), UC(JP_NUM_7), UC(JP_NUM_8), UC(JP_NUM_9), UC(JP_NUM_10),
   KC_TAB           , KC_NO       , KC_W        , UC(HRGN_E)     , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(HRGN_U)  , UC(HRGN_I)  , UC(HRGN_O)  , KC_P         ,
