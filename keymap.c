@@ -704,6 +704,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           default:
             // any unmatched n* 2char clears
             clear_recent_keys();
+            update_recent_keys(keycode, record);
           }
           return false;
         }
@@ -1871,6 +1872,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           default:
             // any unmatched n* 2char clears
             clear_recent_keys();
+            update_recent_keys(keycode, record);
           }
           return false;
         }
