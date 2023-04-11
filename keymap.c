@@ -2279,6 +2279,38 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           return false;
         }
 
+        // V - SERIES
+        if (recent[RECENT_SIZE - 3] == KC_V) {
+          if (recent[RECENT_SIZE - 2] == KC_V) {
+            // MATCH VV_
+            switch (keycode) {
+            case UC(KTKN_U):
+              send_unicode_string("ッヴ");
+              break;
+            }
+          }
+          // any unmatched v** 3char clears
+          unregister_code(keycode);
+          clear_recent_keys();
+          return false;
+        } else if (recent[RECENT_SIZE - 2] == KC_V) {
+          // if V isn't 3rd most recent, is it still 2nd most recent?
+          unregister_code(keycode);
+          switch (keycode) {
+          case UC(KTKN_U):
+            send_unicode_string("ヴ");
+            clear_recent_keys();
+            break;
+          case KC_V:
+            // V exit immediately *without* clear to permit access to above 3 char stanza
+            return false;
+          default:
+            // any unmatched v* 2char clears
+            clear_recent_keys();
+          }
+          return false;
+        }
+
         // W - SERIES
         if (recent[RECENT_SIZE - 3] == KC_W) {
           if (recent[RECENT_SIZE - 2] == KC_W) {
