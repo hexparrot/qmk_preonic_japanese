@@ -2563,7 +2563,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    to size-shifted chars and square/angle brackets. */
 
 [HIRAGANA_SUPP] = LAYOUT_preonic_grid(
-  UC(0x301C), UC(0x0021)   , UC(0x0040), UC(0x0023)   , UC(0x30A5), KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
+  UC(0x301C), UC(0x0021)   , UC(0x0040), UC(0x0023)   , UC(0x00A5), KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
   KC_TRNS   , KC_TRNS      , KC_TRNS   , UC(HRGN_E_SM), KC_TRNS   , UC(HRGN_TSU_SM), KC_TRNS, KC_TRNS   , UC(HRGN_U_SM), UC(HRGN_I_SM), UC(HRGN_O_SM), KC_TRNS   ,
   KC_NO     , UC(HRGN_A_SM), KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , UC(0x309A),
   KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, UC(HRGN_N), KC_TRNS      , UC(0x3008)   , UC(0x3009)   , UC(0x003F),
@@ -2580,7 +2580,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    to size-shifted chars and square/angle brackets. */
 
 [KATAKANA_SUPP] = LAYOUT_preonic_grid(
-  UC(0x301C), UC(0x0021)   , UC(0x0040), UC(0x0023)   , UC(0x30A5), KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
+  UC(0x301C), UC(0x0021)   , UC(0x0040), UC(0x0023)   , UC(0x00A5), KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
   KC_TRNS   , KC_TRNS      , KC_TRNS   , UC(KTKN_E_SM), KC_TRNS   , UC(KTKN_TSU_SM), KC_TRNS, KC_TRNS   , UC(KTKN_U_SM), UC(KTKN_I_SM), UC(KTKN_O_SM), KC_TRNS   ,
   KC_NO     , UC(KTKN_A_SM), KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , UC(0x309A),
   KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, UC(KTKN_N), KC_TRNS      , UC(0x3008)   , UC(0x3009)   , UC(0x003F),
