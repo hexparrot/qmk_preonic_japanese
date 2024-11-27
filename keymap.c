@@ -2337,15 +2337,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ゑ");
+            send_unicode_string("ウェ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ヰ");
+            send_unicode_string("ウィ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ヲ");
+            send_unicode_string("ウォ");
             clear_recent_keys();
             break;
           case KC_W:
