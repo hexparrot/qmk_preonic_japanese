@@ -2297,6 +2297,22 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           // if V isn't 3rd most recent, is it still 2nd most recent?
           unregister_code(keycode);
           switch (keycode) {
+          case UC(KTKN_A):
+            send_unicode_string("ヴァ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_E):
+            send_unicode_string("ヴェ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_I):
+            send_unicode_string("ヴィ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_O):
+            send_unicode_string("ヴォ");
+            clear_recent_keys();
+            break;
           case UC(KTKN_U):
             send_unicode_string("ヴ");
             clear_recent_keys();
