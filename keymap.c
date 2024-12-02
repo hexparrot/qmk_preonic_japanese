@@ -1518,6 +1518,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case UC(KTKN_A):
               send_unicode_string("シャ");
               break;
+            case UC(KTKN_E):
+              send_unicode_string("シェ");
+              break;
             case UC(KTKN_I):
               send_unicode_string("シ");
               break;
@@ -1667,6 +1670,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           switch (keycode) {
           case UC(KTKN_A):
             send_unicode_string("ジャ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_E):
+            send_unicode_string("ジェ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
