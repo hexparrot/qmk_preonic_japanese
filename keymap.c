@@ -1700,6 +1700,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case UC(KTKN_A):
               send_unicode_string("チャ");
               break;
+            case UC(KTKN_E):
+              send_unicode_string("チェ");
+              break;
             case UC(KTKN_I):
               send_unicode_string("チ");
               break;
