@@ -1462,7 +1462,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("チ");
+            send_unicode_string("ティ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
@@ -1470,7 +1470,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ツ");
+            send_unicode_string("トゥ");
+            clear_recent_keys();
+            break;
+          case KC_Y:
+            send_unicode_string("テュ");
             clear_recent_keys();
             break;
           case KC_T:
@@ -1766,7 +1770,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ヂ");
+            send_unicode_string("ディ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
@@ -1774,7 +1778,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ヅ");
+            send_unicode_string("ドゥ");
+            clear_recent_keys();
+            break;
+          case KC_Y:
+            send_unicode_string("ドュ");
             clear_recent_keys();
             break;
           case KC_D:
