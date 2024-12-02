@@ -1960,7 +1960,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
               send_unicode_string("ッフ");
               break;
             }
-          }
+          } 
           // any unmatched f** 3char clears
           unregister_code(keycode);
           clear_recent_keys();
@@ -1969,6 +1969,22 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           // if F isn't 3rd most recent, is it still 2nd most recent?
           unregister_code(keycode);
           switch (keycode) {
+          case UC(KTKN_A):
+            send_unicode_string("ファ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_E):
+            send_unicode_string("フェ");
+            clear_recent_keys(); 
+            break;
+          case UC(KTKN_I):
+            send_unicode_string("フィ");
+            clear_recent_keys();
+            break;
+          case UC(KTKN_O):
+            send_unicode_string("フォ");
+            clear_recent_keys();
+            break;
           case UC(KTKN_U):
             send_unicode_string("フ");
             clear_recent_keys();
