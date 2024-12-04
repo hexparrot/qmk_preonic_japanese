@@ -2603,38 +2603,38 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 */
 
 [HIRAGANA] = LAYOUT_preonic_grid(
-  QK_GESC          , UC(JP_NUM_1), UC(JP_NUM_2), UC(JP_NUM_3), UC(JP_NUM_4), UC(JP_NUM_5), KC_DEL , UC(JP_NUM_6), UC(JP_NUM_7), UC(JP_NUM_8), UC(JP_NUM_9), UC(JP_NUM_10),
-  KC_TAB           , KC_NO       , KC_W        , UC(HRGN_E)  , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(HRGN_U)  , UC(HRGN_I)  , UC(HRGN_O)  , KC_P         ,
-  MO(GUIS)         , UC(HRGN_A)  , KC_S        , KC_D        , KC_F        , KC_G        , KC_ENT , KC_H        , KC_J        , KC_K        , KC_NO       , UC(0x3099)   ,
-  MO(HIRAGANA_SUPP), KC_Z        , KC_NO       , KC_C        , KC_V        , KC_B        , KC_TAB , UC(HRGN_N)  , KC_M        , UC(0x3001)  , UC(0x3002)  , KC_SLSH      ,
-  KC_LCTL          , KC_LALT     , KC_LGUI     , MO(GUIS)    , MO(FUNCS)   , KC_SPC      , KC_SPC , UC(0x30A0)  , UC(0x30FC)  , KC_DEL      , KC_INS      , KC_ENT)      ,
+  QK_GESC          , UC(JP_NUM_1), UC(JP_NUM_2), UC(JP_NUM_3), UC(JP_NUM_4), UC(JP_NUM_5), KC_DEL , UC(JP_NUM_6), UC(JP_NUM_7)   , UC(JP_NUM_8) , UC(JP_NUM_9)  , UC(JP_NUM_10)  ,
+  KC_TAB           , KC_NO       , KC_W        , UC(HRGN_E)  , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(HRGN_U)     , UC(HRGN_I)   , UC(HRGN_O)    , KC_P           ,
+  MO(GUIS)         , UC(HRGN_A)  , KC_S        , KC_D        , KC_F        , KC_G        , KC_ENT , KC_H        , KC_J           , KC_K         , KC_NO         , UC(SYM_DAKUTEN),
+  MO(HIRAGANA_SUPP), KC_Z        , KC_NO       , KC_C        , KC_V        , KC_B        , KC_TAB , UC(HRGN_N)  , KC_M           , UC(SYM_COMMA), UC(SYM_PERIOD), KC_SLSH        ,
+  KC_LCTL          , KC_LALT     , KC_LGUI     , MO(GUIS)    , MO(FUNCS)   , KC_SPC      , KC_SPC , KC_NO       , UC(SYM_LONGVOW), KC_DEL       , KC_INS        , KC_ENT)        ,
 
 /* HIRAGANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
 
 [HIRAGANA_SUPP] = LAYOUT_preonic_grid(
-  UC(0x301C), UC(0x0021)   , UC(0x0040), UC(0x0023)   , UC(0x00A5), KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
-  KC_TRNS   , KC_TRNS      , KC_TRNS   , UC(HRGN_E_SM), KC_TRNS   , UC(HRGN_TSU_SM), KC_TRNS, KC_TRNS   , UC(HRGN_U_SM), UC(HRGN_I_SM), UC(HRGN_O_SM), KC_TRNS   ,
-  KC_NO     , UC(HRGN_A_SM), KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , UC(0x309A),
-  KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, UC(HRGN_N), KC_TRNS      , UC(0x3008)   , UC(0x3009)   , UC(0x003F),
-  KC_LCTL   , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, UC(0x30A0), KC_TRNS      , UC_NEXT      , ENG_GO       , KC_TRNS)  ,
+  UC(SYM_TILDE), UC(SYM_BANG) , UC(SYM_AT), UC(SYM_HASH) , UC(SYM_YEN), KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO         , UC(SYM_KAKKO1), UC(SYM_KAKKO2)    ,
+  KC_TRNS      , KC_TRNS      , KC_TRNS   , UC(HRGN_E_SM), KC_TRNS    , UC(HRGN_TSU_SM), KC_TRNS, KC_TRNS   , UC(HRGN_U_SM), UC(HRGN_I_SM) , UC(HRGN_O_SM) , KC_TRNS           ,
+  KC_NO        , UC(HRGN_A_SM), KC_TRNS   , KC_TRNS      , KC_TRNS    , KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS       , KC_TRNS       , UC(SYM_HANDAKUTEN),
+  KC_TRNS      , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS    , KC_TRNS        , KC_TRNS, UC(HRGN_N), KC_TRNS      , UC(SYM_KAKKO3), UC(SYM_KAKKO4), UC(SYM_INTERRO)   ,
+  KC_LCTL      , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS    , KC_TRNS        , KC_TRNS, KC_NO     , KC_TRNS      , UC_NEXT       , ENG_GO        , KC_TRNS)          ,
 
 [KATAKANA] = LAYOUT_preonic_grid(
-  QK_GESC          , UC(JP_NUM_1), UC(JP_NUM_2), UC(JP_NUM_3), UC(JP_NUM_4), UC(JP_NUM_5), KC_DEL , UC(JP_NUM_6), UC(JP_NUM_7), UC(JP_NUM_8), UC(JP_NUM_9), UC(JP_NUM_10),
-  KC_TAB           , KC_NO       , KC_W        , UC(KTKN_E)  , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(KTKN_U)  , UC(KTKN_I)  , UC(KTKN_O)  , KC_P         ,
-  MO(GUIS)         , UC(KTKN_A)  , KC_S        , KC_D        , KC_F        , KC_G        , KC_ENT , KC_H        , KC_J        , KC_K        , KC_NO       , UC(0x3099)   ,
-  MO(KATAKANA_SUPP), KC_Z        , KC_NO       , KC_C        , KC_V        , KC_B        , KC_TAB , UC(KTKN_N)  , KC_M        , UC(0x3001)  , UC(0x3002)  , KC_SLSH      ,
-  KC_LCTL          , KC_LALT     , KC_LGUI     , MO(GUIS)    , MO(FUNCS)   , KC_SPC      , KC_SPC , UC(0x30A0)  , UC(0x30FC)  , KC_DEL      , KC_INS      , KC_ENT)      ,
+  QK_GESC          , UC(JP_NUM_1), UC(JP_NUM_2), UC(JP_NUM_3), UC(JP_NUM_4), UC(JP_NUM_5), KC_DEL , UC(JP_NUM_6), UC(JP_NUM_7)   , UC(JP_NUM_8) , UC(JP_NUM_9)  , UC(JP_NUM_10)  ,
+  KC_TAB           , KC_NO       , KC_W        , UC(KTKN_E)  , KC_R        , KC_T        , KC_BSPC, KC_Y        , UC(KTKN_U)     , UC(KTKN_I)   , UC(KTKN_O)    , KC_P           ,
+  MO(GUIS)         , UC(KTKN_A)  , KC_S        , KC_D        , KC_F        , KC_G        , KC_ENT , KC_H        , KC_J           , KC_K         , KC_NO         , UC(SYM_DAKUTEN),
+  MO(KATAKANA_SUPP), KC_Z        , KC_NO       , KC_C        , KC_V        , KC_B        , KC_TAB , UC(KTKN_N)  , KC_M           , UC(SYM_COMMA), UC(SYM_PERIOD), KC_SLSH        ,
+  KC_LCTL          , KC_LALT     , KC_LGUI     , MO(GUIS)    , MO(FUNCS)   , KC_SPC      , KC_SPC , KC_NO       , UC(SYM_LONGVOW), KC_DEL       , KC_INS        , KC_ENT)        ,
 
 /* KATAKANA_SUPP is a pseudoshifted layer; pressing and holding shift provides access
    to size-shifted chars and square/angle brackets. */
 
 [KATAKANA_SUPP] = LAYOUT_preonic_grid(
-  UC(0x301C), UC(0x0021)   , UC(0x0040), UC(0x0023)   , UC(0x00A5), KC_NO          , KC_TRNS, KC_NO     , KC_NO        , KC_NO        , UC(0x300C)   , UC(0x300D),
-  KC_TRNS   , KC_TRNS      , KC_TRNS   , UC(KTKN_E_SM), KC_TRNS   , UC(KTKN_TSU_SM), KC_TRNS, KC_TRNS   , UC(KTKN_U_SM), UC(KTKN_I_SM), UC(KTKN_O_SM), KC_TRNS   ,
-  KC_NO     , UC(KTKN_A_SM), KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS      , KC_TRNS      , KC_TRNS      , UC(0x309A),
-  KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, UC(KTKN_N), KC_TRNS      , UC(0x3008)   , UC(0x3009)   , UC(0x003F),
-  KC_LCTL   , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS   , KC_TRNS        , KC_TRNS, UC(0x30A0), UC(0x30FC)   , UC_NEXT      , ENG_GO       , KC_TRNS)  ,
+  UC(SYM_TILDE), UC(SYM_BANG) , UC(SYM_AT), UC(SYM_HASH) , UC(SYM_YEN), KC_NO          , KC_TRNS, KC_NO     , KC_NO          , KC_NO         , UC(SYM_KAKKO1), UC(SYM_KAKKO2)    ,
+  KC_TRNS      , KC_TRNS      , KC_TRNS   , UC(KTKN_E_SM), KC_TRNS    , UC(KTKN_TSU_SM), KC_TRNS, KC_TRNS   , UC(KTKN_U_SM)  , UC(KTKN_I_SM) , UC(KTKN_O_SM) , KC_TRNS           ,
+  KC_NO        , UC(KTKN_A_SM), KC_TRNS   , KC_TRNS      , KC_TRNS    , KC_TRNS        , KC_TRNS, KC_TRNS   , KC_TRNS        , KC_TRNS       , KC_TRNS       , UC(SYM_HANDAKUTEN),
+  KC_TRNS      , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS    , KC_TRNS        , KC_TRNS, UC(KTKN_N), KC_TRNS        , UC(SYM_KAKKO3), UC(SYM_KAKKO4), UC(SYM_INTERRO)   ,
+  KC_LCTL      , KC_TRNS      , KC_TRNS   , KC_TRNS      , KC_TRNS    , KC_TRNS        , KC_TRNS, KC_NO     , UC(SYM_LONGVOW), UC_NEXT       , ENG_GO        , KC_TRNS)          ,
 
 /* FUNCS provides all the remaining functional keys absent from a 60%;
    - Function keys align with their single digit counterparts. See QW
@@ -2659,4 +2659,3 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_LCTL, KC_LALT   , KC_NO        , KC_TRNS      , KC_TRNS      , KC_NO     , KC_NO        , KC_NO       , KC_NO     , HRGA_GO   , KTKN_GO   , LGUI(KC_END)),
 
 };
-
