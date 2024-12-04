@@ -1,14 +1,28 @@
 Multilingual Preonic Setup
 
 Default language: ENG-US
- Key combination to engage...
- English Default Layer: SHIFT+INS
 
-Additional language: JPN
-Key combinations to engage...
- Hiragana Layer: GUI+DEL
- Katakana Layer: GUI+INS
- Input Method Switch (Linux/Win): SHIFT+DEL
+* Restore English Default Layer: SHIFT+INS
+
+```
+,-----------------------------------------------------------------------------------.
+| Esc  |   1  |   2  |   3  |   4  |   5  | Del  |   6  |   7  |   8  |   9  |  0   |
+|------+------+------+------+------+------+------+------+------+------+------+------|
+| Tab  |   Q  |   W  |   E  |   R  |   T  | Bksp |   Y  |   U  |   I  |   O  |  P   |
+|------+------+------+------+------+-------------+------+------+------+------+------|
+| MO(5)|   A  |   S  |   D  |   F  |   G  | Ent  |   H  |   J  |   K  |   L  |  ;   |
+|------+------+------+------+------+------|------+------+------+------+------+------|
+| Shift|   Z  |   X  |   C  |   V  |   B  | Tab  |   N  |   M  |   ,  |   .  |  /   |
+|------+------+------+------+------+------+------+------+------+------+------+------|
+| Ctrl | Alt  | GUI  | LT(5)| MO(6)|    Space    |   +  |   -  |  Del |  Ins | Ent  |
+`-----------------------------------------------------------------------------------'
+```
+
+Key combinations to engage JP Hiragana and Katakana:
+
+ * Hiragana Layer: GUI+DEL
+ * Katakana Layer: GUI+INS
+ * Input Method Switch (Linux/Win): SHIFT+DEL
 
 Usage of the Hiragana/Katakana Layers:
 - Japanese numerals along top row are 1-10 (いち-十)
