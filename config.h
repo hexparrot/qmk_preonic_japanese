@@ -62,3 +62,19 @@
 #define JP_NUM_1E4 0x4E07
 #define JP_NUM_1E8 0x5104
 #define JP_NUM_1E12 0x5146
+
+#define SYM_TILDE 0x301C
+#define SYM_BANG 0x0021
+#define SYM_INTERRO 0x003F
+#define SYM_AT 0x0040
+#define SYM_HASH 0x0023
+#define SYM_YEN 0x00A5
+#define SYM_KAKKO1 0x300C
+#define SYM_KAKKO2 0x300D
+#define SYM_KAKKO3 0x3008
+#define SYM_KAKKO4 0x3009
+#define SYM_DAKUTEN 0x3099
+#define SYM_HANDAKUTEN 0x309A
+#define SYM_COMMA 0x3001
+#define SYM_PERIOD 0x3002
+#define SYM_LONGVOW 0x30FC
