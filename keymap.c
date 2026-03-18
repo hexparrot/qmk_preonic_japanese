@@ -86,6 +86,11 @@ void matrix_scan_user(void) {
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+  // Pass Ctrl+everything through before any layer or IME logic
+  if (record->event.pressed && (get_mods() & MOD_MASK_CTRL)) {
+    return true;  // Let QMK handle it normally
+  }
+
   if (update_recent_keys(keycode, record)) {
     if (record->event.pressed) {
       if (IS_LAYER_ON(HIRAGANA) ) {
