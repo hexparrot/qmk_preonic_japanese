@@ -2493,14 +2493,6 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
       return false;
     }
     break;
-  case ENG_GO:
-    if (record->event.pressed) {
-      layer_clear();
-    } else {
-      layer_on(QWERTY);
-      return false;
-    }
-    break;
   case KC_K:
   case KC_G:
   case KC_S:

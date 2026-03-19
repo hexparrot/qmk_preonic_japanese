@@ -1,13 +1,11 @@
 #pragma once
 #include QMK_KEYBOARD_H
 
-#define QWERTY 0
-#define HIRAGANA 1
-#define KATAKANA 2
-#define FUNCS 5
-#define GUIS 6
-#define HIRAGANA_SUPP 7
-#define KATAKANA_SUPP 8
+#define HIRAGANA 0
+#define KATAKANA 1
+#define HIRAGANA_SUPP 2
+#define KATAKANA_SUPP 3
+#define FN 4
 
 #define TIMEOUT_MS 3000  // Timeout in milliseconds.
 #define RECENT_SIZE 3    // Number of keys in `recent` buffer.
