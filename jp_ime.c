@@ -6,8 +6,29 @@
 static uint16_t recent[RECENT_SIZE] = {KC_NO};
 static uint16_t deadline = 0;
 
+static uint8_t  ime_char_count = 0;
+
+static uint8_t utf8_codepoint_count(const char *s) {
+    uint8_t n = 0;
+    for (; *s; s++) if (((uint8_t)*s & 0xC0) != 0x80) n++;
+    return n;
+}
+
+static void kana_out(const char *s) {
+    ime_char_count += utf8_codepoint_count(s);
+    send_unicode_string(s);
+}
+
+void ime_reset_word_count(void) { ime_char_count = 0; }
+uint8_t ime_get_word_count(void) { return ime_char_count; }
+
 void clear_recent_keys(void) {
   memset(recent, 0, sizeof(recent));  // Set all zeros (KC_NO).
+}
+
+void ime_get_pending(uint16_t *prev, uint16_t *last) {
+  *prev = recent[RECENT_SIZE - 2];
+  *last = recent[RECENT_SIZE - 1];
 }
 
 // --- Matrix scan (timeout) ---
@@ -66,32 +87,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH KK_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っか");
+              kana_out("っか");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っけ");
+              kana_out("っけ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っき");
+              kana_out("っき");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っこ");
+              kana_out("っこ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っく");
+              kana_out("っく");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH KY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("きゃ");
+              kana_out("きゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("きょ");
+              kana_out("きょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("きゅ");
+              kana_out("きゅ");
               break;
             }
           }
@@ -104,23 +125,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("か");
+            kana_out("か");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("け");
+            kana_out("け");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("き");
+            kana_out("き");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("こ");
+            kana_out("こ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("く");
+            kana_out("く");
             clear_recent_keys();
             break;
           case KC_K:
@@ -140,32 +161,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH GG_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っぎ");
+              kana_out("っぎ");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っげ");
+              kana_out("っげ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っぎ");
+              kana_out("っぎ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っご");
+              kana_out("っご");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っぐ");
+              kana_out("っぐ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH GY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("ぎゃ");
+              kana_out("ぎゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("ぎょ");
+              kana_out("ぎょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("ぎゅ");
+              kana_out("ぎゅ");
               break;
             }
           }
@@ -178,23 +199,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("が");
+            kana_out("が");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("げ");
+            kana_out("げ");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("ぎ");
+            kana_out("ぎ");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("ご");
+            kana_out("ご");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("ぐ");
+            kana_out("ぐ");
             clear_recent_keys();
             break;
           case KC_G:
@@ -215,35 +236,35 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH TT_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("った");
+              kana_out("った");
               break;
             case UC(HRGN_E):
-              send_unicode_string("って");
+              kana_out("って");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っち");
+              kana_out("っち");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っと");
+              kana_out("っと");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っつ");
+              kana_out("っつ");
               break;
             case KC_S:
-              send_unicode_string("っつ");
+              kana_out("っつ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_S) {
             // MATCH TS_
             switch (keycode) {
             case UC(HRGN_U):
-              send_unicode_string("つ");
+              kana_out("つ");
               break;
             case UC(HRGN_U_SM):
-              send_unicode_string("っ");
+              kana_out("っ");
               break;
             default:
-              send_unicode_string("っ");
+              kana_out("っ");
               break;
             }
           }
@@ -256,23 +277,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("た");
+            kana_out("た");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("て");
+            kana_out("て");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("ち");
+            kana_out("ち");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("と");
+            kana_out("と");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("つ");
+            kana_out("つ");
             clear_recent_keys();
             break;
           case KC_T:
@@ -292,38 +313,38 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH SS_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っさ");
+              kana_out("っさ");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っせ");
+              kana_out("っせ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っし");
+              kana_out("っし");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っそ");
+              kana_out("っそ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っす");
+              kana_out("っす");
               break;
             case KC_H:
-              send_unicode_string("っし");
+              kana_out("っし");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_H) {
             // MATCH SH_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("しゃ");
+              kana_out("しゃ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("し");
+              kana_out("し");
               break;
             case UC(HRGN_O):
-              send_unicode_string("しょ");
+              kana_out("しょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("しゅ");
+              kana_out("しゅ");
               break;
             }
           }
@@ -336,23 +357,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("さ");
+            kana_out("さ");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("せ");
+            kana_out("せ");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("し");
+            kana_out("し");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("そ");
+            kana_out("そ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("す");
+            kana_out("す");
             clear_recent_keys();
             break;
           case KC_S:
@@ -372,19 +393,19 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH ZZ_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っざ");
+              kana_out("っざ");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っぜ");
+              kana_out("っぜ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っじ");
+              kana_out("っじ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っぞ");
+              kana_out("っぞ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っず");
+              kana_out("っず");
               break;
             }
           }
@@ -397,23 +418,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("ざ");
+            kana_out("ざ");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("ぜ");
+            kana_out("ぜ");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("じ");
+            kana_out("じ");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("ぞ");
+            kana_out("ぞ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("ず");
+            kana_out("ず");
             clear_recent_keys();
             break;
           case KC_Z:
@@ -432,26 +453,26 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH JJ_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っじゃ");
+              kana_out("っじゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っじょ");
+              kana_out("っじょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っじゅ");
+              kana_out("っじゅ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH JY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("じゃ");
+              kana_out("じゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("じょ");
+              kana_out("じょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("じゅ");
+              kana_out("じゅ");
               break;
             }
           }
@@ -464,19 +485,19 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("じゃ");
+            kana_out("じゃ");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("じ");
+            kana_out("じ");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("じょ");
+            kana_out("じょ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("じゅ");
+            kana_out("じゅ");
             clear_recent_keys();
             break;
           case KC_J:
@@ -496,16 +517,16 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH CH_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("ちゃ");
+              kana_out("ちゃ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("ち");
+              kana_out("ち");
               break;
             case UC(HRGN_O):
-              send_unicode_string("ちょ");
+              kana_out("ちょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("ちゅ");
+              kana_out("ちゅ");
               break;
             }
           }
@@ -521,33 +542,33 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH DD_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っだ");
+              kana_out("っだ");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っで");
+              kana_out("っで");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っぢ");
+              kana_out("っぢ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っど");
+              kana_out("っど");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っづ");
+              kana_out("っづ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Z) {
             // MATCH DZ_
             switch (keycode) {
             case UC(HRGN_U):
-              send_unicode_string("っづ");
+              kana_out("っづ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_J) {
             // MATCH DJ_
             switch (keycode) {
             case UC(HRGN_I):
-              send_unicode_string("ぢ");
+              kana_out("ぢ");
               break;
             }
           }
@@ -560,23 +581,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("だ");
+            kana_out("だ");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("で");
+            kana_out("で");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("ぢ");
+            kana_out("ぢ");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("ど");
+            kana_out("ど");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("づ");
+            kana_out("づ");
             clear_recent_keys();
             break;
           case KC_D:
@@ -598,23 +619,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             switch (keycode) {
             case UC(HRGN_A):
               tap_code(KC_BSPC);
-              send_unicode_string("っな");
+              kana_out("っな");
               break;
             case UC(HRGN_E):
               tap_code(KC_BSPC);
-              send_unicode_string("っね");
+              kana_out("っね");
               break;
             case UC(HRGN_I):
               tap_code(KC_BSPC);
-              send_unicode_string("っに");
+              kana_out("っに");
               break;
             case UC(HRGN_O):
               tap_code(KC_BSPC);
-              send_unicode_string("っの");
+              kana_out("っの");
               break;
             case UC(HRGN_U):
               tap_code(KC_BSPC);
-              send_unicode_string("っぬ");
+              kana_out("っぬ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
@@ -622,15 +643,15 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             switch (keycode) {
             case UC(HRGN_A):
               tap_code(KC_BSPC);
-              send_unicode_string("にゃ");
+              kana_out("にゃ");
               break;
             case UC(HRGN_O):
               tap_code(KC_BSPC);
-              send_unicode_string("にょ");
+              kana_out("にょ");
               break;
             case UC(HRGN_U):
               tap_code(KC_BSPC);
-              send_unicode_string("にゅ");
+              kana_out("にゅ");
               break;
             }
           }
@@ -644,27 +665,27 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           switch (keycode) {
           case UC(HRGN_A):
             tap_code(KC_BSPC);
-            send_unicode_string("な");
+            kana_out("な");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
             tap_code(KC_BSPC);
-            send_unicode_string("ね");
+            kana_out("ね");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
             tap_code(KC_BSPC);
-            send_unicode_string("に");
+            kana_out("に");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
             tap_code(KC_BSPC);
-            send_unicode_string("の");
+            kana_out("の");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
             tap_code(KC_BSPC);
-            send_unicode_string("ぬ");
+            kana_out("ぬ");
             clear_recent_keys();
             break;
           case UC(HRGN_N):
@@ -685,32 +706,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH HH_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っは");
+              kana_out("っは");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っへ");
+              kana_out("っへ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っひ");
+              kana_out("っひ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っほ");
+              kana_out("っほ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っふ");
+              kana_out("っふ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH HY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("ひゃ");
+              kana_out("ひゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("ひょ");
+              kana_out("ひょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("ひゅ");
+              kana_out("ひゅ");
               break;
             }
           }
@@ -723,23 +744,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("は");
+            kana_out("は");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("へ");
+            kana_out("へ");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("ひ");
+            kana_out("ひ");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("ほ");
+            kana_out("ほ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("ふ");
+            kana_out("ふ");
             clear_recent_keys();
             break;
           case KC_H:
@@ -759,7 +780,7 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH FF_
             switch (keycode) {
             case UC(HRGN_U):
-              send_unicode_string("っふ");
+              kana_out("っふ");
               break;
             }
           }
@@ -772,7 +793,7 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_U):
-            send_unicode_string("ふ");
+            kana_out("ふ");
             clear_recent_keys();
             break;
           case KC_F:
@@ -791,32 +812,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH BB_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っば");
+              kana_out("っば");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っべ");
+              kana_out("っべ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っび");
+              kana_out("っび");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っぼ");
+              kana_out("っぼ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っぶ");
+              kana_out("っぶ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH BY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("びゃ");
+              kana_out("びゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("びょ");
+              kana_out("びょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("びゅ");
+              kana_out("びゅ");
               break;
             }
           }
@@ -829,23 +850,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("ば");
+            kana_out("ば");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("べ");
+            kana_out("べ");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("び");
+            kana_out("び");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("ぼ");
+            kana_out("ぼ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("ぶ");
+            kana_out("ぶ");
             clear_recent_keys();
             break;
           case KC_B:
@@ -865,32 +886,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH PP_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っぱ");
+              kana_out("っぱ");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っぺ");
+              kana_out("っぺ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っぴ");
+              kana_out("っぴ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っぽ");
+              kana_out("っぽ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っぷ");
+              kana_out("っぷ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH PY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("ぴゃ");
+              kana_out("ぴゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("ぴょ");
+              kana_out("ぴょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("ぴゅ");
+              kana_out("ぴゅ");
               break;
             }
           }
@@ -903,23 +924,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("ぱ");
+            kana_out("ぱ");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("ぺ");
+            kana_out("ぺ");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("ぴ");
+            kana_out("ぴ");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("ぽ");
+            kana_out("ぽ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("ぷ");
+            kana_out("ぷ");
             clear_recent_keys();
             break;
           case KC_P:
@@ -939,32 +960,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH MM_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っま");
+              kana_out("っま");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っめ");
+              kana_out("っめ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っみ");
+              kana_out("っみ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っも");
+              kana_out("っも");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っむ");
+              kana_out("っむ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH MY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("みゃ");
+              kana_out("みゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("みょ");
+              kana_out("みょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("みゅ");
+              kana_out("みゅ");
               break;
             }
           }
@@ -977,23 +998,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("ま");
+            kana_out("ま");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("め");
+            kana_out("め");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("み");
+            kana_out("み");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("も");
+            kana_out("も");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("む");
+            kana_out("む");
             clear_recent_keys();
             break;
           case KC_M:
@@ -1013,32 +1034,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH RR_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っら");
+              kana_out("っら");
               break;
             case UC(HRGN_E):
-              send_unicode_string("っれ");
+              kana_out("っれ");
               break;
             case UC(HRGN_I):
-              send_unicode_string("っり");
+              kana_out("っり");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っろ");
+              kana_out("っろ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っる");
+              kana_out("っる");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH RY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("りゃ");
+              kana_out("りゃ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("りょ");
+              kana_out("りょ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("りゅ");
+              kana_out("りゅ");
               break;
             }
           }
@@ -1051,23 +1072,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("ら");
+            kana_out("ら");
             clear_recent_keys();
             break;
           case UC(HRGN_E):
-            send_unicode_string("れ");
+            kana_out("れ");
             clear_recent_keys();
             break;
           case UC(HRGN_I):
-            send_unicode_string("り");
+            kana_out("り");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("ろ");
+            kana_out("ろ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("る");
+            kana_out("る");
             clear_recent_keys();
             break;
           case KC_R:
@@ -1087,10 +1108,10 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH WW_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っわ");
+              kana_out("っわ");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っを");
+              kana_out("っを");
               break;
             }
           }
@@ -1103,11 +1124,11 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("わ");
+            kana_out("わ");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("を");
+            kana_out("を");
             clear_recent_keys();
             break;
           case KC_W:
@@ -1129,13 +1150,13 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH YY_
             switch (keycode) {
             case UC(HRGN_A):
-              send_unicode_string("っや");
+              kana_out("っや");
               break;
             case UC(HRGN_O):
-              send_unicode_string("っよ");
+              kana_out("っよ");
               break;
             case UC(HRGN_U):
-              send_unicode_string("っゆ");
+              kana_out("っゆ");
               break;
             }
           }
@@ -1148,27 +1169,27 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(HRGN_A):
-            send_unicode_string("や");
+            kana_out("や");
             clear_recent_keys();
             break;
           case UC(HRGN_O):
-            send_unicode_string("よ");
+            kana_out("よ");
             clear_recent_keys();
             break;
           case UC(HRGN_U):
-            send_unicode_string("ゆ");
+            kana_out("ゆ");
             clear_recent_keys();
             break;
           case UC(HRGN_A_SM):
-            send_unicode_string("ゃ");
+            kana_out("ゃ");
             clear_recent_keys();
             break;
           case UC(HRGN_O_SM):
-            send_unicode_string("ょ");
+            kana_out("ょ");
             clear_recent_keys();
             break;
           case UC(HRGN_U_SM):
-            send_unicode_string("ゅ");
+            kana_out("ゅ");
             clear_recent_keys();
             break;
           case KC_Y:
@@ -1191,25 +1212,25 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // pressed, entered, so they should always get removed
             switch (keycode) {
             case UC(JP_NUM_10):
-              send_unicode_string("〇"); // maru/zero for 1e0 despite the math
+              kana_out("〇"); // maru/zero for 1e0 despite the math
               break;
             case UC(JP_NUM_1):
-              send_unicode_string("十");
+              kana_out("十");
               break;
             case UC(JP_NUM_2):
-              send_unicode_string("百");
+              kana_out("百");
               break;
             case UC(JP_NUM_3):
-              send_unicode_string("千");
+              kana_out("千");
               break;
             case UC(JP_NUM_4):
-              send_unicode_string("万");
+              kana_out("万");
               break;
             case UC(JP_NUM_8):
-              send_unicode_string("億");
+              kana_out("億");
               break;
             case KC_W:
-              send_unicode_string("兆");
+              kana_out("兆");
               break;
             }
             unregister_code(keycode);
@@ -1234,32 +1255,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH KK_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッカ");
+              kana_out("ッカ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッケ");
+              kana_out("ッケ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッキ");
+              kana_out("ッキ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッコ");
+              kana_out("ッコ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ック");
+              kana_out("ック");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH KY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("キャ");
+              kana_out("キャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("キョ");
+              kana_out("キョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("キュ");
+              kana_out("キュ");
               break;
             }
           }
@@ -1272,23 +1293,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("カ");
+            kana_out("カ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ケ");
+            kana_out("ケ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("キ");
+            kana_out("キ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("コ");
+            kana_out("コ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ク");
+            kana_out("ク");
             clear_recent_keys();
             break;
           case KC_K:
@@ -1308,32 +1329,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH GG_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッギ");
+              kana_out("ッギ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッゲ");
+              kana_out("ッゲ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッギ");
+              kana_out("ッギ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッゴ");
+              kana_out("ッゴ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッグ");
+              kana_out("ッグ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH GY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ギャ");
+              kana_out("ギャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ギョ");
+              kana_out("ギョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ギュ");
+              kana_out("ギュ");
               break;
             }
           }
@@ -1346,23 +1367,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("が");
+            kana_out("が");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ゲ");
+            kana_out("ゲ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ギ");
+            kana_out("ギ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ゴ");
+            kana_out("ゴ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("グ");
+            kana_out("グ");
             clear_recent_keys();
             break;
           case KC_G:
@@ -1383,35 +1404,35 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH TT_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッタ");
+              kana_out("ッタ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッテ");
+              kana_out("ッテ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッチ");
+              kana_out("ッチ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ット");
+              kana_out("ット");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッツ");
+              kana_out("ッツ");
               break;
             case KC_S:
-              send_unicode_string("ッツ");
+              kana_out("ッツ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_S) {
             // MATCH TS_
             switch (keycode) {
             case UC(KTKN_U):
-              send_unicode_string("ツ");
+              kana_out("ツ");
               break;
             case UC(KTKN_U_SM):
-              send_unicode_string("ッ");
+              kana_out("ッ");
               break;
             default:
-              send_unicode_string("ッ");
+              kana_out("ッ");
               break;
             }
           }
@@ -1424,27 +1445,27 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("タ");
+            kana_out("タ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("テ");
+            kana_out("テ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ティ");
+            kana_out("ティ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ト");
+            kana_out("ト");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("トゥ");
+            kana_out("トゥ");
             clear_recent_keys();
             break;
           case KC_Y:
-            send_unicode_string("テュ");
+            kana_out("テュ");
             clear_recent_keys();
             break;
           case KC_T:
@@ -1464,41 +1485,41 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH SS_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッサ");
+              kana_out("ッサ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッセ");
+              kana_out("ッセ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッシ");
+              kana_out("ッシ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッソ");
+              kana_out("ッソ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッス");
+              kana_out("ッス");
               break;
             case KC_H:
-              send_unicode_string("ッシ");
+              kana_out("ッシ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_H) {
             // MATCH SH_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("シャ");
+              kana_out("シャ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("シェ");
+              kana_out("シェ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("シ");
+              kana_out("シ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ショ");
+              kana_out("ショ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("シュ");
+              kana_out("シュ");
               break;
             }
           }
@@ -1511,23 +1532,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("サ");
+            kana_out("サ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("セ");
+            kana_out("セ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("シ");
+            kana_out("シ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ソ");
+            kana_out("ソ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ス");
+            kana_out("ス");
             clear_recent_keys();
             break;
           case KC_S:
@@ -1547,19 +1568,19 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH ZZ_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッザ");
+              kana_out("ッザ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッゼ");
+              kana_out("ッゼ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッジ");
+              kana_out("ッジ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッゾ");
+              kana_out("ッゾ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッズ");
+              kana_out("ッズ");
               break;
             }
           }
@@ -1572,23 +1593,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ザ");
+            kana_out("ザ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ゼ");
+            kana_out("ゼ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ジ");
+            kana_out("ジ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ゾ");
+            kana_out("ゾ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ズ");
+            kana_out("ズ");
             clear_recent_keys();
             break;
           case KC_Z:
@@ -1607,26 +1628,26 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH JJ_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッジャ");
+              kana_out("ッジャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッジョ");
+              kana_out("ッジョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッジュ");
+              kana_out("ッジュ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH JY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ジャ");
+              kana_out("ジャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ジョ");
+              kana_out("ジョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ジュ");
+              kana_out("ジュ");
               break;
             }
           }
@@ -1639,23 +1660,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ジャ");
+            kana_out("ジャ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ジェ");
+            kana_out("ジェ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ジ");
+            kana_out("ジ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ジョ");
+            kana_out("ジョ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ジュ");
+            kana_out("ジュ");
             clear_recent_keys();
             break;
           case KC_J:
@@ -1675,19 +1696,19 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH CH_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("チャ");
+              kana_out("チャ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("チェ");
+              kana_out("チェ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("チ");
+              kana_out("チ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("チョ");
+              kana_out("チョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("チュ");
+              kana_out("チュ");
               break;
             }
           }
@@ -1703,33 +1724,33 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH DD_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッダ");
+              kana_out("ッダ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッデ");
+              kana_out("ッデ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッヂ");
+              kana_out("ッヂ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッド");
+              kana_out("ッド");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッヅ");
+              kana_out("ッヅ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Z) {
             // MATCH DZ_
             switch (keycode) {
             case UC(KTKN_U):
-              send_unicode_string("ッヅ");
+              kana_out("ッヅ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_J) {
             // MATCH DJ_
             switch (keycode) {
             case UC(KTKN_I):
-              send_unicode_string("ヂ");
+              kana_out("ヂ");
               break;
             }
           }
@@ -1742,27 +1763,27 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ダ");
+            kana_out("ダ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("デ");
+            kana_out("デ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ディ");
+            kana_out("ディ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ド");
+            kana_out("ド");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ドゥ");
+            kana_out("ドゥ");
             clear_recent_keys();
             break;
           case KC_Y:
-            send_unicode_string("ドュ");
+            kana_out("ドュ");
             clear_recent_keys();
             break;
           case KC_D:
@@ -1784,23 +1805,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             switch (keycode) {
             case UC(KTKN_A):
               tap_code(KC_BSPC);
-              send_unicode_string("ッナ");
+              kana_out("ッナ");
               break;
             case UC(KTKN_E):
               tap_code(KC_BSPC);
-              send_unicode_string("ッネ");
+              kana_out("ッネ");
               break;
             case UC(KTKN_I):
               tap_code(KC_BSPC);
-              send_unicode_string("ッニ");
+              kana_out("ッニ");
               break;
             case UC(KTKN_O):
               tap_code(KC_BSPC);
-              send_unicode_string("ッノ");
+              kana_out("ッノ");
               break;
             case UC(KTKN_U):
               tap_code(KC_BSPC);
-              send_unicode_string("ッヌ");
+              kana_out("ッヌ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
@@ -1808,15 +1829,15 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             switch (keycode) {
             case UC(KTKN_A):
               tap_code(KC_BSPC);
-              send_unicode_string("ニャ");
+              kana_out("ニャ");
               break;
             case UC(KTKN_O):
               tap_code(KC_BSPC);
-              send_unicode_string("ニョ");
+              kana_out("ニョ");
               break;
             case UC(KTKN_U):
               tap_code(KC_BSPC);
-              send_unicode_string("ニュ");
+              kana_out("ニュ");
               break;
             }
           }
@@ -1830,27 +1851,27 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           switch (keycode) {
           case UC(KTKN_A):
             tap_code(KC_BSPC);
-            send_unicode_string("ナ");
+            kana_out("ナ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
             tap_code(KC_BSPC);
-            send_unicode_string("ネ");
+            kana_out("ネ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
             tap_code(KC_BSPC);
-            send_unicode_string("ニ");
+            kana_out("ニ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
             tap_code(KC_BSPC);
-            send_unicode_string("ノ");
+            kana_out("ノ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
             tap_code(KC_BSPC);
-            send_unicode_string("ヌ");
+            kana_out("ヌ");
             clear_recent_keys();
             break;
           case UC(KTKN_N):
@@ -1871,32 +1892,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH HH_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッハ");
+              kana_out("ッハ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッヘ");
+              kana_out("ッヘ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッヒ");
+              kana_out("ッヒ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッホ");
+              kana_out("ッホ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッフ");
+              kana_out("ッフ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH HY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ヒャ");
+              kana_out("ヒャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ヒョ");
+              kana_out("ヒョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ヒュ");
+              kana_out("ヒュ");
               break;
             }
           }
@@ -1909,23 +1930,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ハ");
+            kana_out("ハ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ヘ");
+            kana_out("ヘ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ヒ");
+            kana_out("ヒ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ホ");
+            kana_out("ホ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("フ");
+            kana_out("フ");
             clear_recent_keys();
             break;
           case KC_H:
@@ -1945,7 +1966,7 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH FF_
             switch (keycode) {
             case UC(KTKN_U):
-              send_unicode_string("ッフ");
+              kana_out("ッフ");
               break;
             }
           } 
@@ -1958,23 +1979,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ファ");
+            kana_out("ファ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("フェ");
+            kana_out("フェ");
             clear_recent_keys(); 
             break;
           case UC(KTKN_I):
-            send_unicode_string("フィ");
+            kana_out("フィ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("フォ");
+            kana_out("フォ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("フ");
+            kana_out("フ");
             clear_recent_keys();
             break;
           case KC_F:
@@ -1993,32 +2014,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH BB_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッバ");
+              kana_out("ッバ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッベ");
+              kana_out("ッベ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッビ");
+              kana_out("ッビ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッボ");
+              kana_out("ッボ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッブ");
+              kana_out("ッブ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH BY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ビャ");
+              kana_out("ビャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ビョ");
+              kana_out("ビョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ビュ");
+              kana_out("ビュ");
               break;
             }
           }
@@ -2031,23 +2052,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("バ");
+            kana_out("バ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ベ");
+            kana_out("ベ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ビ");
+            kana_out("ビ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ボ");
+            kana_out("ボ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ブ");
+            kana_out("ブ");
             clear_recent_keys();
             break;
           case KC_B:
@@ -2067,32 +2088,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH PP_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッパ");
+              kana_out("ッパ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッペ");
+              kana_out("ッペ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッピ");
+              kana_out("ッピ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッポ");
+              kana_out("ッポ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ップ");
+              kana_out("ップ");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH PY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ピャ");
+              kana_out("ピャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ピョ");
+              kana_out("ピョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ピュ");
+              kana_out("ピュ");
               break;
             }
           }
@@ -2105,23 +2126,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("パ");
+            kana_out("パ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ペ");
+            kana_out("ペ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ピ");
+            kana_out("ピ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ポ");
+            kana_out("ポ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("プ");
+            kana_out("プ");
             clear_recent_keys();
             break;
           case KC_P:
@@ -2141,32 +2162,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH MM_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッマ");
+              kana_out("ッマ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッメ");
+              kana_out("ッメ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッミ");
+              kana_out("ッミ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッモ");
+              kana_out("ッモ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッム");
+              kana_out("ッム");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH MY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ミャ");
+              kana_out("ミャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ミョ");
+              kana_out("ミョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ミュ");
+              kana_out("ミュ");
               break;
             }
           }
@@ -2179,23 +2200,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("マ");
+            kana_out("マ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("メ");
+            kana_out("メ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ミ");
+            kana_out("ミ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("モ");
+            kana_out("モ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ム");
+            kana_out("ム");
             clear_recent_keys();
             break;
           case KC_M:
@@ -2215,32 +2236,32 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH RR_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッラ");
+              kana_out("ッラ");
               break;
             case UC(KTKN_E):
-              send_unicode_string("ッレ");
+              kana_out("ッレ");
               break;
             case UC(KTKN_I):
-              send_unicode_string("ッリ");
+              kana_out("ッリ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッロ");
+              kana_out("ッロ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッル");
+              kana_out("ッル");
               break;
             }
           } else if (recent[RECENT_SIZE - 2] == KC_Y) {
             // MATCH RY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("リャ");
+              kana_out("リャ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("リョ");
+              kana_out("リョ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("リュ");
+              kana_out("リュ");
               break;
             }
           }
@@ -2253,23 +2274,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ラ");
+            kana_out("ラ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("レ");
+            kana_out("レ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("リ");
+            kana_out("リ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ロ");
+            kana_out("ロ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ル");
+            kana_out("ル");
             clear_recent_keys();
             break;
           case KC_R:
@@ -2289,7 +2310,7 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH VV_
             switch (keycode) {
             case UC(KTKN_U):
-              send_unicode_string("ッヴ");
+              kana_out("ッヴ");
               break;
             }
           }
@@ -2302,23 +2323,23 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ヴァ");
+            kana_out("ヴァ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ヴェ");
+            kana_out("ヴェ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ヴィ");
+            kana_out("ヴィ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ヴォ");
+            kana_out("ヴォ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ヴ");
+            kana_out("ヴ");
             clear_recent_keys();
             break;
           case KC_V:
@@ -2337,10 +2358,10 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH WW_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッわ");
+              kana_out("ッわ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッを");
+              kana_out("ッを");
               break;
             }
           }
@@ -2353,19 +2374,19 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ワ");
+            kana_out("ワ");
             clear_recent_keys();
             break;
           case UC(KTKN_E):
-            send_unicode_string("ウェ");
+            kana_out("ウェ");
             clear_recent_keys();
             break;
           case UC(KTKN_I):
-            send_unicode_string("ウィ");
+            kana_out("ウィ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ウォ");
+            kana_out("ウォ");
             clear_recent_keys();
             break;
           case KC_W:
@@ -2384,13 +2405,13 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // MATCH YY_
             switch (keycode) {
             case UC(KTKN_A):
-              send_unicode_string("ッヤ");
+              kana_out("ッヤ");
               break;
             case UC(KTKN_O):
-              send_unicode_string("ッヨ");
+              kana_out("ッヨ");
               break;
             case UC(KTKN_U):
-              send_unicode_string("ッユ");
+              kana_out("ッユ");
               break;
             }
           }
@@ -2403,27 +2424,27 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
           unregister_code(keycode);
           switch (keycode) {
           case UC(KTKN_A):
-            send_unicode_string("ヤ");
+            kana_out("ヤ");
             clear_recent_keys();
             break;
           case UC(KTKN_O):
-            send_unicode_string("ヨ");
+            kana_out("ヨ");
             clear_recent_keys();
             break;
           case UC(KTKN_U):
-            send_unicode_string("ユ");
+            kana_out("ユ");
             clear_recent_keys();
             break;
           case UC(KTKN_A_SM):
-            send_unicode_string("ャ");
+            kana_out("ャ");
             clear_recent_keys();
             break;
           case UC(KTKN_O_SM):
-            send_unicode_string("ョ");
+            kana_out("ョ");
             clear_recent_keys();
             break;
           case UC(KTKN_U_SM):
-            send_unicode_string("ュ");
+            kana_out("ュ");
             clear_recent_keys();
             break;
           case KC_Y:
@@ -2446,25 +2467,25 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
             // pressed, entered, so they should always get removed
             switch (keycode) {
             case UC(JP_NUM_10):
-              send_unicode_string("〇"); // maru/zero for 1e0 despite the math
+              kana_out("〇"); // maru/zero for 1e0 despite the math
               break;
             case UC(JP_NUM_1):
-              send_unicode_string("十");
+              kana_out("十");
               break;
             case UC(JP_NUM_2):
-              send_unicode_string("百");
+              kana_out("百");
               break;
             case UC(JP_NUM_3):
-              send_unicode_string("千");
+              kana_out("千");
               break;
             case UC(JP_NUM_4):
-              send_unicode_string("万");
+              kana_out("万");
               break;
             case UC(JP_NUM_8):
-              send_unicode_string("億");
+              kana_out("億");
               break;
             case KC_W:
-              send_unicode_string("兆");
+              kana_out("兆");
               break;
             }
             unregister_code(keycode);
@@ -2528,6 +2549,18 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
       return false;
     }
     break;
+  }
+
+  // Standalone kana (lone vowels, ん/ン, small kana, ー) are emitted directly
+  // by QMK's UC() handling and never pass through kana_out(), so count them
+  // here. Gated on press to avoid double-counting the key-release event; all
+  // kana_out() paths return earlier, so multi-key kana can't be counted twice.
+  if (record->event.pressed) {
+    switch (keycode) {
+    case UC(0x3040) ... UC(0x30FF):
+      ime_char_count++;
+      break;
+    }
   }
 
   return true;

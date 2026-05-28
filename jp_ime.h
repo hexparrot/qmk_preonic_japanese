@@ -15,7 +15,8 @@
 enum {
   HRGA_GO = SAFE_RANGE,
   KTKN_GO,
-  ENG_GO
+  ENG_GO,
+  _JP_IME_SAFE_END
 };
 
 // Lifecycle functions called from keymap.c hooks
@@ -24,3 +25,11 @@ bool     ime_process_record(uint16_t keycode, keyrecord_t *record);
 
 // Exposed so keymap.c can call clear if needed
 void     clear_recent_keys(void);
+
+// Exposes the two most-recent pending keys for RGB prediction.
+// prev = recent[RECENT_SIZE-2], last = recent[RECENT_SIZE-1]
+void     ime_get_pending(uint16_t *prev, uint16_t *last);
+
+// Committed-kana word length counter.
+void     ime_reset_word_count(void);
+uint8_t  ime_get_word_count(void);
