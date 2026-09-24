@@ -1,2567 +1,506 @@
 #include "jp_ime.h"
-// Start Recent Key Rememering:
-// https://getreuer.info/posts/keyboards/triggers/index.html#based-on-previously-typed-keys
 #include <string.h>
 
-static uint16_t recent[RECENT_SIZE] = {KC_NO};
-static uint16_t deadline = 0;
+/* Romaji -> kana IME.
+ *
+ * Vowel keys (あいうえお / アイウエオ) and ん / ン are UC() keycodes that QMK
+ * types on its own. Consonant keys are plain KC_ letters and are held here as
+ * pending romaji until a vowel completes them; the completed kana is looked up
+ * in romaji_table (hiragana) and converted to katakana on the katakana layer.
+ *
+ *   - doubled consonant (kka, ssha, ttsu) and "tch" prefix -> っ + kana
+ *   - ん is typed immediately; a following vowel or y rewrites it (ん + あ -> な,
+ *     ん + y + あ -> にゃ). ん ん confirms the first ん and types nothing more.
+ *   - an invalid consonant drops the stale pending romaji and starts over
+ *   - Backspace with romaji pending removes the last pending letter
+ *   - any other key drops pending romaji and is passed through untouched
+ *   - dakuten / handakuten after a kana with a voiced form replace it
+ *     (つ + ゛ -> づ); otherwise the combining mark is typed
+ *   - 1 e _ : 一 え then 0/1/2/3/4/8/w -> 〇 十 百 千 万 億 兆
+ */
 
+typedef struct {
+  const char *romaji;
+  const char *kana;  // hiragana, UTF-8
+} romaji_entry_t;
+
+static const romaji_entry_t romaji_table[] = {
+  {"ka","か"},{"ki","き"},{"ku","く"},{"ke","け"},{"ko","こ"},
+  {"kya","きゃ"},{"kyi","きぃ"},{"kyu","きゅ"},{"kye","きぇ"},{"kyo","きょ"},
+  {"ga","が"},{"gi","ぎ"},{"gu","ぐ"},{"ge","げ"},{"go","ご"},
+  {"gya","ぎゃ"},{"gyi","ぎぃ"},{"gyu","ぎゅ"},{"gye","ぎぇ"},{"gyo","ぎょ"},
+  {"sa","さ"},{"si","し"},{"su","す"},{"se","せ"},{"so","そ"},
+  {"sha","しゃ"},{"shi","し"},{"shu","しゅ"},{"she","しぇ"},{"sho","しょ"},
+  {"sya","しゃ"},{"syi","しぃ"},{"syu","しゅ"},{"sye","しぇ"},{"syo","しょ"},
+  {"za","ざ"},{"zi","じ"},{"zu","ず"},{"ze","ぜ"},{"zo","ぞ"},
+  {"zya","じゃ"},{"zyi","じぃ"},{"zyu","じゅ"},{"zye","じぇ"},{"zyo","じょ"},
+  {"ja","じゃ"},{"ji","じ"},{"ju","じゅ"},{"je","じぇ"},{"jo","じょ"},
+  {"jya","じゃ"},{"jyi","じぃ"},{"jyu","じゅ"},{"jye","じぇ"},{"jyo","じょ"},
+  {"ta","た"},{"ti","ち"},{"tu","つ"},{"te","て"},{"to","と"},
+  {"tya","ちゃ"},{"tyi","ちぃ"},{"tyu","ちゅ"},{"tye","ちぇ"},{"tyo","ちょ"},
+  {"tsa","つぁ"},{"tsi","つぃ"},{"tsu","つ"},{"tse","つぇ"},{"tso","つぉ"},
+  {"tha","てゃ"},{"thi","てぃ"},{"thu","てゅ"},{"the","てぇ"},{"tho","てょ"},
+  {"twa","とぁ"},{"twi","とぃ"},{"twu","とぅ"},{"twe","とぇ"},{"two","とぉ"},
+  {"ca","か"},{"ci","し"},{"cu","く"},{"ce","せ"},{"co","こ"},
+  {"cha","ちゃ"},{"chi","ち"},{"chu","ちゅ"},{"che","ちぇ"},{"cho","ちょ"},
+  {"cya","ちゃ"},{"cyi","ちぃ"},{"cyu","ちゅ"},{"cye","ちぇ"},{"cyo","ちょ"},
+  {"da","だ"},{"di","ぢ"},{"du","づ"},{"de","で"},{"do","ど"},
+  {"dya","ぢゃ"},{"dyi","ぢぃ"},{"dyu","ぢゅ"},{"dye","ぢぇ"},{"dyo","ぢょ"},
+  {"dha","でゃ"},{"dhi","でぃ"},{"dhu","でゅ"},{"dhe","でぇ"},{"dho","でょ"},
+  {"dwa","どぁ"},{"dwi","どぃ"},{"dwu","どぅ"},{"dwe","どぇ"},{"dwo","どぉ"},
+  {"dzu","づ"},{"dji","ぢ"},
+  // n* is only reachable after the ん key (see handle_n)
+  {"na","な"},{"ni","に"},{"nu","ぬ"},{"ne","ね"},{"no","の"},
+  {"nya","にゃ"},{"nyi","にぃ"},{"nyu","にゅ"},{"nye","にぇ"},{"nyo","にょ"},
+  {"ha","は"},{"hi","ひ"},{"hu","ふ"},{"he","へ"},{"ho","ほ"},
+  {"hya","ひゃ"},{"hyi","ひぃ"},{"hyu","ひゅ"},{"hye","ひぇ"},{"hyo","ひょ"},
+  {"fa","ふぁ"},{"fi","ふぃ"},{"fu","ふ"},{"fe","ふぇ"},{"fo","ふぉ"},
+  {"fya","ふゃ"},{"fyu","ふゅ"},{"fyo","ふょ"},
+  {"ba","ば"},{"bi","び"},{"bu","ぶ"},{"be","べ"},{"bo","ぼ"},
+  {"bya","びゃ"},{"byi","びぃ"},{"byu","びゅ"},{"bye","びぇ"},{"byo","びょ"},
+  {"pa","ぱ"},{"pi","ぴ"},{"pu","ぷ"},{"pe","ぺ"},{"po","ぽ"},
+  {"pya","ぴゃ"},{"pyi","ぴぃ"},{"pyu","ぴゅ"},{"pye","ぴぇ"},{"pyo","ぴょ"},
+  {"ma","ま"},{"mi","み"},{"mu","む"},{"me","め"},{"mo","も"},
+  {"mya","みゃ"},{"myi","みぃ"},{"myu","みゅ"},{"mye","みぇ"},{"myo","みょ"},
+  {"ya","や"},{"yi","い"},{"yu","ゆ"},{"ye","いぇ"},{"yo","よ"},
+  {"ra","ら"},{"ri","り"},{"ru","る"},{"re","れ"},{"ro","ろ"},
+  {"rya","りゃ"},{"ryi","りぃ"},{"ryu","りゅ"},{"rye","りぇ"},{"ryo","りょ"},
+  {"wa","わ"},{"wi","うぃ"},{"wu","う"},{"we","うぇ"},{"wo","を"},
+  {"wha","うぁ"},{"whi","うぃ"},{"whu","う"},{"whe","うぇ"},{"who","うぉ"},
+  {"wyi","ゐ"},{"wye","ゑ"},
+  {"va","ゔぁ"},{"vi","ゔぃ"},{"vu","ゔ"},{"ve","ゔぇ"},{"vo","ゔぉ"},
+  {"vya","ゔゃ"},{"vyu","ゔゅ"},{"vyo","ゔょ"},
+  {"xa","ぁ"},{"xi","ぃ"},{"xu","ぅ"},{"xe","ぇ"},{"xo","ぉ"},
+  {"xya","ゃ"},{"xyu","ゅ"},{"xyo","ょ"},
+  {"xtu","っ"},{"xtsu","っ"},{"xwa","ゎ"},{"xka","ゕ"},{"xke","ゖ"},
+  {"la","ぁ"},{"li","ぃ"},{"lu","ぅ"},{"le","ぇ"},{"lo","ぉ"},
+  {"lya","ゃ"},{"lyu","ゅ"},{"lyo","ょ"},
+  {"ltu","っ"},{"ltsu","っ"},{"lwa","ゎ"},{"lka","ゕ"},{"lke","ゖ"},
+};
+#define ROMAJI_TABLE_LEN (sizeof(romaji_table) / sizeof(romaji_table[0]))
+
+#define PENDING_MAX 3  // longest consonant run before a vowel: "xts", "kky", "tth"
+
+static char     pending[PENDING_MAX + 1] = {0};
+static uint8_t  plen       = 0;
+static bool     n_shown    = false;  // pending[0] == 'n' is an ん already on screen
+static uint8_t  num_state  = 0;      // 1 after 一, 2 after 一え
+static uint32_t last_kana  = 0;      // last kana on screen, for dakuten
+static uint16_t deadline   = 0;
 static uint8_t  ime_char_count = 0;
 
-static uint8_t utf8_codepoint_count(const char *s) {
-    uint8_t n = 0;
-    for (; *s; s++) if (((uint8_t)*s & 0xC0) != 0x80) n++;
-    return n;
+/* ---------------- counter ---------------- */
+
+static void count_add(uint8_t n) {
+  ime_char_count = (ime_char_count > 255 - n) ? 255 : ime_char_count + n;
+}
+static void count_sub(uint8_t n) {
+  ime_char_count = (ime_char_count > n) ? ime_char_count - n : 0;
+}
+void    ime_reset_word_count(void) { ime_char_count = 0; }
+uint8_t ime_get_word_count(void)   { return ime_char_count; }
+
+/* ---------------- state ---------------- */
+
+static void clear_pending(void) {
+  plen = 0;
+  pending[0] = 0;
+  n_shown = false;
 }
 
-static void kana_out(const char *s) {
-    ime_char_count += utf8_codepoint_count(s);
-    send_unicode_string(s);
+void ime_clear(void) {
+  clear_pending();
+  num_state = 0;
 }
 
-void ime_reset_word_count(void) { ime_char_count = 0; }
-uint8_t ime_get_word_count(void) { return ime_char_count; }
-
-void clear_recent_keys(void) {
-  memset(recent, 0, sizeof(recent));  // Set all zeros (KC_NO).
-}
-
-void ime_get_pending(uint16_t *prev, uint16_t *last) {
-  *prev = recent[RECENT_SIZE - 2];
-  *last = recent[RECENT_SIZE - 1];
-}
-
-// --- Matrix scan (timeout) ---
 void ime_matrix_scan(void) {
-    if (recent[RECENT_SIZE - 1] && timer_expired(timer_read(), deadline)) {
-        clear_recent_keys();
-    }
+  if ((plen || num_state) && timer_expired(timer_read(), deadline)) {
+    ime_clear();
+  }
 }
 
-// Handles one event. Returns true if the key was appended to `recent`.
-static bool update_recent_keys(uint16_t keycode, keyrecord_t* record) {
-  if (!record->event.pressed) { return false; }
- 
-  if (((get_mods() | get_oneshot_mods()) & ~MOD_MASK_SHIFT) != 0) {
-    clear_recent_keys();  // Avoid interfering with hotkeys.
+/* ---------------- UTF-8 / kana helpers ---------------- */
+
+static uint32_t utf8_next(const char **s) {
+  const uint8_t *p = (const uint8_t *)*s;
+  uint32_t cp;
+  if (p[0] < 0x80)      { cp = p[0];                                                    *s += 1; }
+  else if (p[0] < 0xE0) { cp = ((p[0] & 0x1F) << 6)  |  (p[1] & 0x3F);                  *s += 2; }
+  else                  { cp = ((p[0] & 0x0F) << 12) | ((p[1] & 0x3F) << 6) | (p[2] & 0x3F); *s += 3; }
+  return cp;
+}
+
+static char *utf8_put(char *o, uint32_t cp) {
+  if (cp < 0x80)       { *o++ = cp; }
+  else if (cp < 0x800) { *o++ = 0xC0 | (cp >> 6);  *o++ = 0x80 | (cp & 0x3F); }
+  else                 { *o++ = 0xE0 | (cp >> 12); *o++ = 0x80 | ((cp >> 6) & 0x3F); *o++ = 0x80 | (cp & 0x3F); }
+  return o;
+}
+
+static bool is_katakana_layer(void) {
+  return !IS_LAYER_ON(HIRAGANA) && IS_LAYER_ON(KATAKANA);
+}
+
+// Types `hira` (converted to katakana on the katakana layer), optionally
+// prefixed with a small tsu and optionally replacing the ん on screen.
+static void emit_kana(const char *hira, bool sokuon, bool replace_n) {
+  char     buf[16];
+  char    *o    = buf;
+  bool     kata = is_katakana_layer();
+  uint8_t  n    = 0;
+  uint32_t cp   = 0;
+
+  if (sokuon) { o = utf8_put(o, kata ? 0x30C3 : 0x3063); n++; }
+  for (const char *s = hira; *s; n++) {
+    cp = utf8_next(&s);
+    if (kata && cp >= 0x3041 && cp <= 0x3096) cp += 0x60;
+    o = utf8_put(o, cp);
+  }
+  *o = 0;
+
+  if (replace_n) {
+    tap_code(KC_BSPC);
+    count_sub(1);
+  }
+  send_unicode_string(buf);
+  count_add(n);
+  last_kana = cp;
+}
+
+static void send_codepoint(uint32_t cp) {
+  char buf[4];
+  *utf8_put(buf, cp) = 0;
+  send_unicode_string(buf);
+}
+
+// Precomposed voiced (handaku=false) or semi-voiced form of cp, or 0.
+static uint32_t voiced_form(uint32_t cp, bool handaku) {
+  uint32_t off = (cp >= 0x30A1 && cp <= 0x30F6) ? 0x60 : 0;
+  uint32_t h   = cp - off;
+  if (handaku) {
+    switch (h) {
+    case 0x306F: case 0x3072: case 0x3075: case 0x3078: case 0x307B:  // はひふへほ
+      return h + 2 + off;
+    }
+    return 0;
+  }
+  switch (h) {
+  case 0x3046:  // う -> ゔ
+    return 0x3094 + off;
+  case 0x304B: case 0x304D: case 0x304F: case 0x3051: case 0x3053:  // かきくけこ
+  case 0x3055: case 0x3057: case 0x3059: case 0x305B: case 0x305D:  // さしすせそ
+  case 0x305F: case 0x3061: case 0x3064: case 0x3066: case 0x3068:  // たちつてと
+  case 0x306F: case 0x3072: case 0x3075: case 0x3078: case 0x307B:  // はひふへほ
+    return h + 1 + off;
+  }
+  return 0;
+}
+
+/* ---------------- romaji lookup ---------------- */
+
+// Can `c` be doubled into a small tsu (kka -> っか)?
+static bool doubles(char c) {
+  return c && !strchr("aiueonxl", c);
+}
+
+// Strips a sokuon-forming prefix ("kk..." or "tc...") and reports it.
+static const char *strip_sokuon(const char *r, bool *sokuon) {
+  *sokuon = false;
+  if ((r[0] == r[1] && doubles(r[0])) || (r[0] == 't' && r[1] == 'c')) {
+    *sokuon = true;
+    return r + 1;
+  }
+  return r;
+}
+
+static const char *lookup(const char *romaji, bool *sokuon) {
+  const char *r = strip_sokuon(romaji, sokuon);
+  for (uint8_t i = 0; i < ROMAJI_TABLE_LEN; i++) {
+    if (strcmp(romaji_table[i].romaji, r) == 0) return romaji_table[i].kana;
+  }
+  return NULL;
+}
+
+// Is `romaji` (consonants only) the start of some table entry?
+static bool is_prefix(const char *romaji) {
+  bool sokuon;
+  const char *r = strip_sokuon(romaji, &sokuon);
+  size_t len = strlen(r);
+  if (sokuon && romaji[0] == romaji[1] && len == 1) return true;  // "kk"
+  for (uint8_t i = 0; i < ROMAJI_TABLE_LEN; i++) {
+    if (strncmp(romaji_table[i].romaji, r, len) == 0 && romaji_table[i].romaji[len]) return true;
+  }
+  return false;
+}
+
+// pending + c into out; returns false if it would overflow.
+static bool with_char(char *out, char c) {
+  if (plen >= PENDING_MAX + 1) return false;
+  memcpy(out, pending, plen);
+  out[plen] = c;
+  out[plen + 1] = 0;
+  return true;
+}
+
+/* ---------------- key classification ---------------- */
+
+static char consonant_of(uint16_t kc) {
+  if (kc < KC_A || kc > KC_Z) return 0;
+  char c = 'a' + (kc - KC_A);
+  return strchr("aiueonq", c) ? 0 : c;
+}
+
+static char vowel_of(uint16_t kc) {
+  switch (kc) {
+  case UC(HRGN_A): case UC(KTKN_A): return 'a';
+  case UC(HRGN_I): case UC(KTKN_I): return 'i';
+  case UC(HRGN_U): case UC(KTKN_U): return 'u';
+  case UC(HRGN_E): case UC(KTKN_E): return 'e';
+  case UC(HRGN_O): case UC(KTKN_O): return 'o';
+  }
+  return 0;
+}
+
+static bool is_n_key(uint16_t kc) {
+  return kc == UC(HRGN_N) || kc == UC(KTKN_N);
+}
+
+// y + small ぁぅぉ -> ゃゅょ
+static const char *small_y_of(uint16_t kc) {
+  switch (kc) {
+  case UC(HRGN_A_SM): case UC(KTKN_A_SM): return "ゃ";
+  case UC(HRGN_U_SM): case UC(KTKN_U_SM): return "ゅ";
+  case UC(HRGN_O_SM): case UC(KTKN_O_SM): return "ょ";
+  }
+  return NULL;
+}
+
+static bool is_uc(uint16_t kc) {
+  return kc >= QK_UNICODE;
+}
+static uint32_t uc_codepoint(uint16_t kc) {
+  return kc - QK_UNICODE;
+}
+static bool is_counted_kana(uint32_t cp) {
+  return cp >= 0x3041 && cp <= 0x30FF && cp != 0x3099 && cp != 0x309A;
+}
+
+// 1 e _ place-value kanji
+static const char *num_suffix_of(uint16_t kc) {
+  switch (kc) {
+  case UC(JP_NUM_10): return "〇";  // 1e0: 〇, see README
+  case UC(JP_NUM_1):  return "十";
+  case UC(JP_NUM_2):  return "百";
+  case UC(JP_NUM_3):  return "千";
+  case UC(JP_NUM_4):  return "万";
+  case UC(JP_NUM_8):  return "億";
+  case KC_W:          return "兆";  // 1e12 would need two keys
+  }
+  return NULL;
+}
+
+/* ---------------- prediction (RGB) ---------------- */
+
+bool ime_has_pending(void) {
+  return plen > 0 || num_state == 2;
+}
+
+bool ime_accepts(uint16_t kc) {
+  char tmp[PENDING_MAX + 2];
+  bool sokuon;
+
+  if (num_state == 2 && plen == 0) return num_suffix_of(kc) != NULL;
+
+  if (plen == 0) {
+    char c = consonant_of(kc);
+    if (c) {
+      tmp[0] = c;
+      tmp[1] = 0;
+      return is_prefix(tmp);
+    }
+    return vowel_of(kc) || is_n_key(kc);
+  }
+  if (n_shown && plen == 1 && is_n_key(kc)) return true;
+  if (plen == 1 && pending[0] == 'y' && small_y_of(kc)) return true;
+  char c = consonant_of(kc);
+  if (c) return plen < PENDING_MAX && with_char(tmp, c) && is_prefix(tmp);
+  char v = vowel_of(kc);
+  if (v) return with_char(tmp, v) && lookup(tmp, &sokuon);
+  return false;
+}
+
+/* ---------------- key handling ---------------- */
+
+// Passes a key through to QMK, keeping the counter and dakuten state right.
+static bool pass_through(uint16_t kc) {
+  if (is_uc(kc) && is_counted_kana(uc_codepoint(kc))) {
+    count_add(1);
+    last_kana = uc_codepoint(kc);
+  } else {
+    last_kana = 0;
+  }
+  return true;
+}
+
+static bool handle_consonant(char c) {
+  char tmp[PENDING_MAX + 2];
+  if (plen < PENDING_MAX && with_char(tmp, c) && is_prefix(tmp)) {
+    memcpy(pending, tmp, plen + 2);
+    plen++;
     return false;
   }
-
-  switch (keycode) {
-    case KC_A ... KC_SLASH:  // These keys type letters, digits, symbols.
-      break;
-    case UC(0x3040) ... UC(0x30FF): // Hiragana + Katakana
-    case UC(0x4E00) ... UC(0x767E): // plus numerals
-      break;
-    case KC_LSFT:  // These keys don't type anything on their own.
-    case KC_RSFT:
-    case QK_ONE_SHOT_MOD ... QK_ONE_SHOT_MOD_MAX:
-      return false;
-
-    default:  // Avoid acting otherwise, particularly on navigation keys.
-      clear_recent_keys();
-      return false;
+  // Invalid continuation: keep any ん on screen, drop stale romaji, start over.
+  clear_pending();
+  tmp[0] = c;
+  tmp[1] = 0;
+  if (is_prefix(tmp)) {
+    pending[0] = c;
+    pending[1] = 0;
+    plen = 1;
   }
+  return false;
+}
 
-  // Slide the buffer left by one element.
-  memmove(recent, recent + 1, (RECENT_SIZE - 1) * sizeof(*recent));
+static bool handle_vowel(uint16_t kc, char v) {
+  char tmp[PENDING_MAX + 2];
+  bool sokuon;
 
-  recent[RECENT_SIZE - 1] = keycode;
-  deadline = record->event.time + TIMEOUT_MS;
+  if (plen == 0) return pass_through(kc);
+  const char *kana = with_char(tmp, v) ? lookup(tmp, &sokuon) : NULL;
+  bool replace_n = n_shown;
+  clear_pending();
+  if (!kana) return pass_through(kc);
+  emit_kana(kana, sokuon, replace_n);
+  return false;
+}
+
+static bool handle_n(uint16_t kc) {
+  if (n_shown && plen == 1) {  // ん ん: confirm the first, type nothing
+    clear_pending();
+    return false;
+  }
+  clear_pending();
+  n_shown = true;
+  pending[0] = 'n';
+  pending[1] = 0;
+  plen = 1;
+  return pass_through(kc);
+}
+
+static bool handle_backspace(void) {
+  if (plen > 0 && !(n_shown && plen == 1)) {
+    pending[--plen] = 0;
+    return false;
+  }
+  clear_pending();
+  count_sub(1);
+  last_kana = 0;
   return true;
+}
+
+static bool handle_dakuten(uint16_t kc) {
+  clear_pending();
+  uint32_t v = voiced_form(last_kana, uc_codepoint(kc) == SYM_HANDAKUTEN);
+  if (!v) {
+    last_kana = 0;
+    return true;  // no precomposed form: type the combining mark
+  }
+  tap_code(KC_BSPC);
+  send_codepoint(v);
+  last_kana = v;
+  return false;
+}
+
+static bool on_kana_layer(void) {
+  return IS_LAYER_ON(HIRAGANA) || IS_LAYER_ON(KATAKANA);
 }
 
 bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
-  // Pass Ctrl+everything through before any layer or IME logic
-  if (record->event.pressed && (get_mods() & MOD_MASK_CTRL)) {
-    return true;  // Let QMK handle it normally
-  }
-
-  if (update_recent_keys(keycode, record)) {
-    if (record->event.pressed) {
-      if (IS_LAYER_ON(HIRAGANA) ) {
-
-        // K - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_K) {
-          if (recent[RECENT_SIZE - 2] == KC_K) {
-            // MATCH KK_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っか");
-              break;
-            case UC(HRGN_E):
-              kana_out("っけ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っき");
-              break;
-            case UC(HRGN_O):
-              kana_out("っこ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っく");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH KY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("きゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("きょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("きゅ");
-              break;
-            }
-          }
-          // any unmatched k** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_K) {
-          // if K isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("か");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("け");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("き");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("こ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("く");
-            clear_recent_keys();
-            break;
-          case KC_K:
-          case KC_Y:
-            // K,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched k* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // G - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_G) {
-          if (recent[RECENT_SIZE - 2] == KC_G) {
-            // MATCH GG_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っぎ");
-              break;
-            case UC(HRGN_E):
-              kana_out("っげ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っぎ");
-              break;
-            case UC(HRGN_O):
-              kana_out("っご");
-              break;
-            case UC(HRGN_U):
-              kana_out("っぐ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH GY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("ぎゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("ぎょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("ぎゅ");
-              break;
-            }
-          }
-          // any unmatched g** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_G) {
-          // if G isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("が");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("げ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("ぎ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("ご");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("ぐ");
-            clear_recent_keys();
-            break;
-          case KC_G:
-          case KC_Y:
-            // G,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched g* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // T - SERIES
-        // Position T-Series before S-Series to ensure TSU can be captured.
-        if (recent[RECENT_SIZE - 3] == KC_T) {
-          if (recent[RECENT_SIZE - 2] == KC_T) {
-            // MATCH TT_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("った");
-              break;
-            case UC(HRGN_E):
-              kana_out("って");
-              break;
-            case UC(HRGN_I):
-              kana_out("っち");
-              break;
-            case UC(HRGN_O):
-              kana_out("っと");
-              break;
-            case UC(HRGN_U):
-              kana_out("っつ");
-              break;
-            case KC_S:
-              kana_out("っつ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_S) {
-            // MATCH TS_
-            switch (keycode) {
-            case UC(HRGN_U):
-              kana_out("つ");
-              break;
-            case UC(HRGN_U_SM):
-              kana_out("っ");
-              break;
-            default:
-              kana_out("っ");
-              break;
-            }
-          }
-          // any unmatched t** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_T) {
-          // if T isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("た");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("て");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("ち");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("と");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("つ");
-            clear_recent_keys();
-            break;
-          case KC_T:
-          case KC_S:
-            // T,S exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched t* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // S - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_S) {
-          if (recent[RECENT_SIZE - 2] == KC_S) {
-            // MATCH SS_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っさ");
-              break;
-            case UC(HRGN_E):
-              kana_out("っせ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っし");
-              break;
-            case UC(HRGN_O):
-              kana_out("っそ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っす");
-              break;
-            case KC_H:
-              kana_out("っし");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_H) {
-            // MATCH SH_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("しゃ");
-              break;
-            case UC(HRGN_I):
-              kana_out("し");
-              break;
-            case UC(HRGN_O):
-              kana_out("しょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("しゅ");
-              break;
-            }
-          }
-          // any unmatched s** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_S) {
-          // if S isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("さ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("せ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("し");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("そ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("す");
-            clear_recent_keys();
-            break;
-          case KC_S:
-          case KC_H:
-            // S,H exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched s* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // Z - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_Z) {
-          if (recent[RECENT_SIZE - 2] == KC_Z) {
-            // MATCH ZZ_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っざ");
-              break;
-            case UC(HRGN_E):
-              kana_out("っぜ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っじ");
-              break;
-            case UC(HRGN_O):
-              kana_out("っぞ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っず");
-              break;
-            }
-          }
-          // any unmatched z** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_Z) {
-          // if Z isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("ざ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("ぜ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("じ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("ぞ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("ず");
-            clear_recent_keys();
-            break;
-          case KC_Z:
-            // Z exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched z* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // J - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_J) {
-          if (recent[RECENT_SIZE - 2] == KC_J) {
-            // MATCH JJ_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っじゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("っじょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っじゅ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH JY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("じゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("じょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("じゅ");
-              break;
-            }
-          }
-          // any unmatched j** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_J) {
-          // if J isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("じゃ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("じ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("じょ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("じゅ");
-            clear_recent_keys();
-            break;
-          case KC_J:
-          case KC_Y:
-            // J,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched j* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // C - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_C) {
-          if (recent[RECENT_SIZE - 2] == KC_H) {
-            // MATCH CH_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("ちゃ");
-              break;
-            case UC(HRGN_I):
-              kana_out("ち");
-              break;
-            case UC(HRGN_O):
-              kana_out("ちょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("ちゅ");
-              break;
-            }
-          }
-          // any unmatched c** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        }
-
-        // D - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_D) {
-          if (recent[RECENT_SIZE - 2] == KC_D) {
-            // MATCH DD_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っだ");
-              break;
-            case UC(HRGN_E):
-              kana_out("っで");
-              break;
-            case UC(HRGN_I):
-              kana_out("っぢ");
-              break;
-            case UC(HRGN_O):
-              kana_out("っど");
-              break;
-            case UC(HRGN_U):
-              kana_out("っづ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Z) {
-            // MATCH DZ_
-            switch (keycode) {
-            case UC(HRGN_U):
-              kana_out("っづ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_J) {
-            // MATCH DJ_
-            switch (keycode) {
-            case UC(HRGN_I):
-              kana_out("ぢ");
-              break;
-            }
-          }
-          // any unmatched d** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_D) {
-          // if D isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("だ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("で");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("ぢ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("ど");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("づ");
-            clear_recent_keys();
-            break;
-          case KC_D:
-          case KC_Z:
-          case KC_J:
-            // D,Z,J exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched d* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // N - SERIES
-        if (recent[RECENT_SIZE - 3] == UC(HRGN_N)) {
-          if (recent[RECENT_SIZE - 2] == UC(HRGN_N)) {
-            // MATCH NN_
-            switch (keycode) {
-            case UC(HRGN_A):
-              tap_code(KC_BSPC);
-              kana_out("っな");
-              break;
-            case UC(HRGN_E):
-              tap_code(KC_BSPC);
-              kana_out("っね");
-              break;
-            case UC(HRGN_I):
-              tap_code(KC_BSPC);
-              kana_out("っに");
-              break;
-            case UC(HRGN_O):
-              tap_code(KC_BSPC);
-              kana_out("っの");
-              break;
-            case UC(HRGN_U):
-              tap_code(KC_BSPC);
-              kana_out("っぬ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH NY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              tap_code(KC_BSPC);
-              kana_out("にゃ");
-              break;
-            case UC(HRGN_O):
-              tap_code(KC_BSPC);
-              kana_out("にょ");
-              break;
-            case UC(HRGN_U):
-              tap_code(KC_BSPC);
-              kana_out("にゅ");
-              break;
-            }
-          }
-          // any unmatched n** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == UC(HRGN_N)) {
-          // if N isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            tap_code(KC_BSPC);
-            kana_out("な");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            tap_code(KC_BSPC);
-            kana_out("ね");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            tap_code(KC_BSPC);
-            kana_out("に");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            tap_code(KC_BSPC);
-            kana_out("の");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            tap_code(KC_BSPC);
-            kana_out("ぬ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_N):
-          case KC_Y:
-            // UC(HRGN_N),Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched n* 2char clears
-            clear_recent_keys();
-            update_recent_keys(keycode, record);
-          }
-          return false;
-        }
-
-        // H - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_H) {
-          if (recent[RECENT_SIZE - 2] == KC_H) {
-            // MATCH HH_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っは");
-              break;
-            case UC(HRGN_E):
-              kana_out("っへ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っひ");
-              break;
-            case UC(HRGN_O):
-              kana_out("っほ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っふ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH HY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("ひゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("ひょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("ひゅ");
-              break;
-            }
-          }
-          // any unmatched h** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_H) {
-          // if H isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("は");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("へ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("ひ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("ほ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("ふ");
-            clear_recent_keys();
-            break;
-          case KC_H:
-          case KC_Y:
-            // H,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched h* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // F - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_F) {
-          if (recent[RECENT_SIZE - 2] == KC_F) {
-            // MATCH FF_
-            switch (keycode) {
-            case UC(HRGN_U):
-              kana_out("っふ");
-              break;
-            }
-          }
-          // any unmatched f** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_F) {
-          // if F isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_U):
-            kana_out("ふ");
-            clear_recent_keys();
-            break;
-          case KC_F:
-            // F exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched f* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // B - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_B) {
-          if (recent[RECENT_SIZE - 2] == KC_B) {
-            // MATCH BB_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っば");
-              break;
-            case UC(HRGN_E):
-              kana_out("っべ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っび");
-              break;
-            case UC(HRGN_O):
-              kana_out("っぼ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っぶ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH BY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("びゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("びょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("びゅ");
-              break;
-            }
-          }
-          // any unmatched b** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_B) {
-          // if B isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("ば");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("べ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("び");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("ぼ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("ぶ");
-            clear_recent_keys();
-            break;
-          case KC_B:
-          case KC_Y:
-            // B,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched b* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // P - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_P) {
-          if (recent[RECENT_SIZE - 2] == KC_P) {
-            // MATCH PP_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っぱ");
-              break;
-            case UC(HRGN_E):
-              kana_out("っぺ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っぴ");
-              break;
-            case UC(HRGN_O):
-              kana_out("っぽ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っぷ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH PY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("ぴゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("ぴょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("ぴゅ");
-              break;
-            }
-          }
-          // any unmatched p** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_P) {
-          // if P isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("ぱ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("ぺ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("ぴ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("ぽ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("ぷ");
-            clear_recent_keys();
-            break;
-          case KC_P:
-          case KC_Y:
-            // P,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched p* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // M - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_M) {
-          if (recent[RECENT_SIZE - 2] == KC_M) {
-            // MATCH MM_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っま");
-              break;
-            case UC(HRGN_E):
-              kana_out("っめ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っみ");
-              break;
-            case UC(HRGN_O):
-              kana_out("っも");
-              break;
-            case UC(HRGN_U):
-              kana_out("っむ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH MY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("みゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("みょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("みゅ");
-              break;
-            }
-          }
-          // any unmatched m** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_M) {
-          // if M isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("ま");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("め");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("み");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("も");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("む");
-            clear_recent_keys();
-            break;
-          case KC_M:
-          case KC_Y:
-            // M,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched m* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // R - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_R) {
-          if (recent[RECENT_SIZE - 2] == KC_R) {
-            // MATCH RR_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っら");
-              break;
-            case UC(HRGN_E):
-              kana_out("っれ");
-              break;
-            case UC(HRGN_I):
-              kana_out("っり");
-              break;
-            case UC(HRGN_O):
-              kana_out("っろ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っる");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH RY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("りゃ");
-              break;
-            case UC(HRGN_O):
-              kana_out("りょ");
-              break;
-            case UC(HRGN_U):
-              kana_out("りゅ");
-              break;
-            }
-          }
-          // any unmatched r** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_R) {
-          // if R isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("ら");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_E):
-            kana_out("れ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_I):
-            kana_out("り");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("ろ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("る");
-            clear_recent_keys();
-            break;
-          case KC_R:
-          case KC_Y:
-            // R,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched r* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // W - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_W) {
-          if (recent[RECENT_SIZE - 2] == KC_W) {
-            // MATCH WW_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っわ");
-              break;
-            case UC(HRGN_O):
-              kana_out("っを");
-              break;
-            }
-          }
-          // any unmatched w** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_W) {
-          // if W isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("わ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("を");
-            clear_recent_keys();
-            break;
-          case KC_W:
-            // W exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched w* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // Y - SERIES
-        /* Needs to come after all other letters that might use Y
-        // Such as Ryo, Mya... to ensure proper execution that this
-        // does not clear recent keys on 2nd key Y */
-        if (recent[RECENT_SIZE - 3] == KC_Y) {
-          if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH YY_
-            switch (keycode) {
-            case UC(HRGN_A):
-              kana_out("っや");
-              break;
-            case UC(HRGN_O):
-              kana_out("っよ");
-              break;
-            case UC(HRGN_U):
-              kana_out("っゆ");
-              break;
-            }
-          }
-          // any unmatched f** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-          // if Y isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(HRGN_A):
-            kana_out("や");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O):
-            kana_out("よ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U):
-            kana_out("ゆ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_A_SM):
-            kana_out("ゃ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_O_SM):
-            kana_out("ょ");
-            clear_recent_keys();
-            break;
-          case UC(HRGN_U_SM):
-            kana_out("ゅ");
-            clear_recent_keys();
-            break;
-          case KC_Y:
-            // Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched y* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // NUM - SERIES
-        if (recent[RECENT_SIZE - 3] == UC(JP_NUM_1)) {
-          if (recent[RECENT_SIZE - 2] == UC(HRGN_E)) {
-            // MATCH 1E_
-            tap_code(KC_BSPC);
-            tap_code(KC_BSPC);
-            // right or wrong, backspace. 1,E have already been
-            // pressed, entered, so they should always get removed
-            switch (keycode) {
-            case UC(JP_NUM_10):
-              kana_out("〇"); // maru/zero for 1e0 despite the math
-              break;
-            case UC(JP_NUM_1):
-              kana_out("十");
-              break;
-            case UC(JP_NUM_2):
-              kana_out("百");
-              break;
-            case UC(JP_NUM_3):
-              kana_out("千");
-              break;
-            case UC(JP_NUM_4):
-              kana_out("万");
-              break;
-            case UC(JP_NUM_8):
-              kana_out("億");
-              break;
-            case KC_W:
-              kana_out("兆");
-              break;
-            }
-            unregister_code(keycode);
-            clear_recent_keys();
-            return false;
-          } // end e-press
-
-        }
-        // END HIRAGANA
-      } else if (IS_LAYER_ON(KATAKANA) ) {
-        /* START KATAKANA HERE
-        ****************************************
-        ****************************************
-        ****************************************
-        ****************************************
-        ****************************************
-        ****************************************
-        ************************************* */
-        // K - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_K) {
-          if (recent[RECENT_SIZE - 2] == KC_K) {
-            // MATCH KK_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッカ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッケ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッキ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッコ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ック");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH KY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("キャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("キョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("キュ");
-              break;
-            }
-          }
-          // any unmatched k** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_K) {
-          // if K isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("カ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ケ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("キ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("コ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ク");
-            clear_recent_keys();
-            break;
-          case KC_K:
-          case KC_Y:
-            // K,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched k* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // G - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_G) {
-          if (recent[RECENT_SIZE - 2] == KC_G) {
-            // MATCH GG_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッギ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッゲ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッギ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッゴ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッグ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH GY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ギャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ギョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ギュ");
-              break;
-            }
-          }
-          // any unmatched g** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_G) {
-          // if G isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("が");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ゲ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ギ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ゴ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("グ");
-            clear_recent_keys();
-            break;
-          case KC_G:
-          case KC_Y:
-            // G,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched g* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // T - SERIES
-        // Position T-Series before S-Series to ensure TSU can be captured.
-        if (recent[RECENT_SIZE - 3] == KC_T) {
-          if (recent[RECENT_SIZE - 2] == KC_T) {
-            // MATCH TT_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッタ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッテ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッチ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ット");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッツ");
-              break;
-            case KC_S:
-              kana_out("ッツ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_S) {
-            // MATCH TS_
-            switch (keycode) {
-            case UC(KTKN_U):
-              kana_out("ツ");
-              break;
-            case UC(KTKN_U_SM):
-              kana_out("ッ");
-              break;
-            default:
-              kana_out("ッ");
-              break;
-            }
-          }
-          // any unmatched t** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_T) {
-          // if T isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("タ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("テ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ティ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ト");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("トゥ");
-            clear_recent_keys();
-            break;
-          case KC_Y:
-            kana_out("テュ");
-            clear_recent_keys();
-            break;
-          case KC_T:
-          case KC_S:
-            // T,S exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched t* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // S - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_S) {
-          if (recent[RECENT_SIZE - 2] == KC_S) {
-            // MATCH SS_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッサ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッセ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッシ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッソ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッス");
-              break;
-            case KC_H:
-              kana_out("ッシ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_H) {
-            // MATCH SH_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("シャ");
-              break;
-            case UC(KTKN_E):
-              kana_out("シェ");
-              break;
-            case UC(KTKN_I):
-              kana_out("シ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ショ");
-              break;
-            case UC(KTKN_U):
-              kana_out("シュ");
-              break;
-            }
-          }
-          // any unmatched s** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_S) {
-          // if S isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("サ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("セ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("シ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ソ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ス");
-            clear_recent_keys();
-            break;
-          case KC_S:
-          case KC_H:
-            // S,H exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched s* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // Z - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_Z) {
-          if (recent[RECENT_SIZE - 2] == KC_Z) {
-            // MATCH ZZ_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッザ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッゼ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッジ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッゾ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッズ");
-              break;
-            }
-          }
-          // any unmatched z** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_Z) {
-          // if Z isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ザ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ゼ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ジ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ゾ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ズ");
-            clear_recent_keys();
-            break;
-          case KC_Z:
-            // Z exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched z* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // J - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_J) {
-          if (recent[RECENT_SIZE - 2] == KC_J) {
-            // MATCH JJ_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッジャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッジョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッジュ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH JY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ジャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ジョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ジュ");
-              break;
-            }
-          }
-          // any unmatched j** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_J) {
-          // if J isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ジャ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ジェ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ジ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ジョ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ジュ");
-            clear_recent_keys();
-            break;
-          case KC_J:
-          case KC_Y:
-            // J,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched j* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // C - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_C) {
-          if (recent[RECENT_SIZE - 2] == KC_H) {
-            // MATCH CH_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("チャ");
-              break;
-            case UC(KTKN_E):
-              kana_out("チェ");
-              break;
-            case UC(KTKN_I):
-              kana_out("チ");
-              break;
-            case UC(KTKN_O):
-              kana_out("チョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("チュ");
-              break;
-            }
-          }
-          // any unmatched c** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        }
-
-        // D - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_D) {
-          if (recent[RECENT_SIZE - 2] == KC_D) {
-            // MATCH DD_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッダ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッデ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッヂ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッド");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッヅ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Z) {
-            // MATCH DZ_
-            switch (keycode) {
-            case UC(KTKN_U):
-              kana_out("ッヅ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_J) {
-            // MATCH DJ_
-            switch (keycode) {
-            case UC(KTKN_I):
-              kana_out("ヂ");
-              break;
-            }
-          }
-          // any unmatched d** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_D) {
-          // if D isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ダ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("デ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ディ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ド");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ドゥ");
-            clear_recent_keys();
-            break;
-          case KC_Y:
-            kana_out("ドュ");
-            clear_recent_keys();
-            break;
-          case KC_D:
-          case KC_Z:
-          case KC_J:
-            // D,Z,J exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched d* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // N - SERIES
-        if (recent[RECENT_SIZE - 3] == UC(KTKN_N)) {
-          if (recent[RECENT_SIZE - 2] == UC(KTKN_N)) {
-            // MATCH NN_
-            switch (keycode) {
-            case UC(KTKN_A):
-              tap_code(KC_BSPC);
-              kana_out("ッナ");
-              break;
-            case UC(KTKN_E):
-              tap_code(KC_BSPC);
-              kana_out("ッネ");
-              break;
-            case UC(KTKN_I):
-              tap_code(KC_BSPC);
-              kana_out("ッニ");
-              break;
-            case UC(KTKN_O):
-              tap_code(KC_BSPC);
-              kana_out("ッノ");
-              break;
-            case UC(KTKN_U):
-              tap_code(KC_BSPC);
-              kana_out("ッヌ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH NY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              tap_code(KC_BSPC);
-              kana_out("ニャ");
-              break;
-            case UC(KTKN_O):
-              tap_code(KC_BSPC);
-              kana_out("ニョ");
-              break;
-            case UC(KTKN_U):
-              tap_code(KC_BSPC);
-              kana_out("ニュ");
-              break;
-            }
-          }
-          // any unmatched n** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == UC(KTKN_N)) {
-          // if N isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            tap_code(KC_BSPC);
-            kana_out("ナ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            tap_code(KC_BSPC);
-            kana_out("ネ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            tap_code(KC_BSPC);
-            kana_out("ニ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            tap_code(KC_BSPC);
-            kana_out("ノ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            tap_code(KC_BSPC);
-            kana_out("ヌ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_N):
-          case KC_Y:
-            // UC(KTKN_N),Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched n* 2char clears
-            clear_recent_keys();
-            update_recent_keys(keycode, record);
-          }
-          return false;
-        }
-
-        // H - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_H) {
-          if (recent[RECENT_SIZE - 2] == KC_H) {
-            // MATCH HH_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッハ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッヘ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッヒ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッホ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッフ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH HY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ヒャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ヒョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ヒュ");
-              break;
-            }
-          }
-          // any unmatched h** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_H) {
-          // if H isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ハ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ヘ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ヒ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ホ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("フ");
-            clear_recent_keys();
-            break;
-          case KC_H:
-          case KC_Y:
-            // H,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched h* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // F - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_F) {
-          if (recent[RECENT_SIZE - 2] == KC_F) {
-            // MATCH FF_
-            switch (keycode) {
-            case UC(KTKN_U):
-              kana_out("ッフ");
-              break;
-            }
-          } 
-          // any unmatched f** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_F) {
-          // if F isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ファ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("フェ");
-            clear_recent_keys(); 
-            break;
-          case UC(KTKN_I):
-            kana_out("フィ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("フォ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("フ");
-            clear_recent_keys();
-            break;
-          case KC_F:
-            // F exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched f* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // B - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_B) {
-          if (recent[RECENT_SIZE - 2] == KC_B) {
-            // MATCH BB_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッバ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッベ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッビ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッボ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッブ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH BY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ビャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ビョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ビュ");
-              break;
-            }
-          }
-          // any unmatched b** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_B) {
-          // if B isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("バ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ベ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ビ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ボ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ブ");
-            clear_recent_keys();
-            break;
-          case KC_B:
-          case KC_Y:
-            // B,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched b* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // P - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_P) {
-          if (recent[RECENT_SIZE - 2] == KC_P) {
-            // MATCH PP_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッパ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッペ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッピ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッポ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ップ");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH PY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ピャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ピョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ピュ");
-              break;
-            }
-          }
-          // any unmatched p** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_P) {
-          // if P isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("パ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ペ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ピ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ポ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("プ");
-            clear_recent_keys();
-            break;
-          case KC_P:
-          case KC_Y:
-            // P,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched p* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // M - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_M) {
-          if (recent[RECENT_SIZE - 2] == KC_M) {
-            // MATCH MM_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッマ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッメ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッミ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッモ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッム");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH MY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ミャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ミョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ミュ");
-              break;
-            }
-          }
-          // any unmatched m** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_M) {
-          // if M isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("マ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("メ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ミ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("モ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ム");
-            clear_recent_keys();
-            break;
-          case KC_M:
-          case KC_Y:
-            // M,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched m* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // R - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_R) {
-          if (recent[RECENT_SIZE - 2] == KC_R) {
-            // MATCH RR_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッラ");
-              break;
-            case UC(KTKN_E):
-              kana_out("ッレ");
-              break;
-            case UC(KTKN_I):
-              kana_out("ッリ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッロ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッル");
-              break;
-            }
-          } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH RY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("リャ");
-              break;
-            case UC(KTKN_O):
-              kana_out("リョ");
-              break;
-            case UC(KTKN_U):
-              kana_out("リュ");
-              break;
-            }
-          }
-          // any unmatched r** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_R) {
-          // if R isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ラ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("レ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("リ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ロ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ル");
-            clear_recent_keys();
-            break;
-          case KC_R:
-          case KC_Y:
-            // R,Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched r* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // V - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_V) {
-          if (recent[RECENT_SIZE - 2] == KC_V) {
-            // MATCH VV_
-            switch (keycode) {
-            case UC(KTKN_U):
-              kana_out("ッヴ");
-              break;
-            }
-          }
-          // any unmatched v** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_V) {
-          // if V isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ヴァ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ヴェ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ヴィ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ヴォ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ヴ");
-            clear_recent_keys();
-            break;
-          case KC_V:
-            // V exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched v* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // W - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_W) {
-          if (recent[RECENT_SIZE - 2] == KC_W) {
-            // MATCH WW_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッわ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッを");
-              break;
-            }
-          }
-          // any unmatched w** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_W) {
-          // if W isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ワ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_E):
-            kana_out("ウェ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_I):
-            kana_out("ウィ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ウォ");
-            clear_recent_keys();
-            break;
-          case KC_W:
-            // W exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched w* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // Y - SERIES
-        if (recent[RECENT_SIZE - 3] == KC_Y) {
-          if (recent[RECENT_SIZE - 2] == KC_Y) {
-            // MATCH YY_
-            switch (keycode) {
-            case UC(KTKN_A):
-              kana_out("ッヤ");
-              break;
-            case UC(KTKN_O):
-              kana_out("ッヨ");
-              break;
-            case UC(KTKN_U):
-              kana_out("ッユ");
-              break;
-            }
-          }
-          // any unmatched f** 3char clears
-          unregister_code(keycode);
-          clear_recent_keys();
-          return false;
-        } else if (recent[RECENT_SIZE - 2] == KC_Y) {
-          // if Y isn't 3rd most recent, is it still 2nd most recent?
-          unregister_code(keycode);
-          switch (keycode) {
-          case UC(KTKN_A):
-            kana_out("ヤ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O):
-            kana_out("ヨ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U):
-            kana_out("ユ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_A_SM):
-            kana_out("ャ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_O_SM):
-            kana_out("ョ");
-            clear_recent_keys();
-            break;
-          case UC(KTKN_U_SM):
-            kana_out("ュ");
-            clear_recent_keys();
-            break;
-          case KC_Y:
-            // Y exit immediately *without* clear to permit access to above 3 char stanza
-            return false;
-          default:
-            // any unmatched y* 2char clears
-            clear_recent_keys();
-          }
-          return false;
-        }
-
-        // NUM - SERIES
-        if (recent[RECENT_SIZE - 3] == UC(JP_NUM_1)) {
-          if (recent[RECENT_SIZE - 2] == UC(KTKN_E)) {
-            // MATCH 1E_
-            tap_code(KC_BSPC);
-            tap_code(KC_BSPC);
-            // right or wrong, backspace. 1,E have already been
-            // pressed, entered, so they should always get removed
-            switch (keycode) {
-            case UC(JP_NUM_10):
-              kana_out("〇"); // maru/zero for 1e0 despite the math
-              break;
-            case UC(JP_NUM_1):
-              kana_out("十");
-              break;
-            case UC(JP_NUM_2):
-              kana_out("百");
-              break;
-            case UC(JP_NUM_3):
-              kana_out("千");
-              break;
-            case UC(JP_NUM_4):
-              kana_out("万");
-              break;
-            case UC(JP_NUM_8):
-              kana_out("億");
-              break;
-            case KC_W:
-              kana_out("兆");
-              break;
-            }
-            unregister_code(keycode);
-            clear_recent_keys();
-            return false;
-          } // end e-press
-
-        }
-
-      } // end katakana layer check
-    } // end record.pressed
-  } // end update_recent_keys
-
   switch (keycode) {
   case HRGA_GO:
-    if (record->event.pressed) {
-      layer_clear();
-      layer_on(HIRAGANA);
-      return false;
-    }
-    break;
   case KTKN_GO:
     if (record->event.pressed) {
+      ime_clear();
       layer_clear();
-      layer_on(KATAKANA);
+      layer_on(keycode == HRGA_GO ? HIRAGANA : KATAKANA);
       return false;
     }
-    break;
+    return true;
   case ENG_GO:
     if (record->event.pressed) {
+      ime_clear();
       layer_clear();
-    } else {
-      layer_on(QWERTY);
-      return false;
+      return true;
     }
-    break;
-  case KC_K:
-  case KC_G:
-  case KC_S:
-  case KC_Z:
-  case KC_T:
-  case KC_D:
-  case KC_N:
-  case KC_H:
-  case KC_B:
-  case KC_P:
-  case KC_M:
-  case KC_Y:
-  case KC_R:
-  case KC_W:
-  case KC_V:
-  case KC_C:
-  case KC_F:
-  case KC_J:
-    if (IS_LAYER_ON(HIRAGANA) ) {
-      // unregister because it is already saved in recent buffer
-      unregister_code(keycode);
-      return false;
-    } else if (IS_LAYER_ON(KATAKANA) ) {
-      unregister_code(keycode);
-      return false;
-    }
-    break;
+    layer_on(QWERTY);
+    return false;
   }
 
-  // Standalone kana (lone vowels, ん/ン, small kana, ー) are emitted directly
-  // by QMK's UC() handling and never pass through kana_out(), so count them
-  // here. Gated on press to avoid double-counting the key-release event; all
-  // kana_out() paths return earlier, so multi-key kana can't be counted twice.
-  if (record->event.pressed) {
-    switch (keycode) {
-    case UC(0x3040) ... UC(0x30FF):
-      ime_char_count++;
-      break;
+  // Releases always pass: a consonant press that was swallowed has nothing
+  // to release, and one that went out as a chord (Ctrl+K) must be released.
+  if (!record->event.pressed) return true;
+
+  if (!on_kana_layer()) {
+    ime_clear();
+    return true;
+  }
+
+  // Chords (Ctrl/Alt/GUI) go straight through and end any sequence.
+  if ((get_mods() | get_oneshot_mods()) & ~MOD_MASK_SHIFT) {
+    ime_clear();
+    return true;
+  }
+
+  switch (keycode) {
+  case KC_LSFT:
+  case KC_RSFT:
+  case QK_ONE_SHOT_MOD ... QK_ONE_SHOT_MOD_MAX:
+  case QK_MOMENTARY ... QK_MOMENTARY_MAX:
+    // Don't interrupt a sequence: y + (hold SUPP) + small ぁ -> ゃ.
+    return true;
+  }
+
+  deadline = record->event.time + TIMEOUT_MS;
+
+  // 1 e _
+  uint8_t ns = num_state;
+  num_state = 0;
+  if (ns == 2 && plen == 0) {
+    const char *suffix = num_suffix_of(keycode);
+    if (suffix) {
+      tap_code(KC_BSPC);
+      tap_code(KC_BSPC);
+      count_sub(1);  // え (一 is not counted)
+      send_unicode_string(suffix);
+      last_kana = 0;
+      return false;
     }
   }
 
-  return true;
-};
+  char c = consonant_of(keycode);
+  if (c) return handle_consonant(c);
+
+  char v = vowel_of(keycode);
+  if (v) {
+    if (ns == 1 && v == 'e' && plen == 0) num_state = 2;
+    return handle_vowel(keycode, v);
+  }
+
+  if (is_n_key(keycode)) return handle_n(keycode);
+
+  const char *small_y = small_y_of(keycode);
+  if (small_y && plen == 1 && pending[0] == 'y') {
+    clear_pending();
+    emit_kana(small_y, false, false);
+    return false;
+  }
+
+  if (keycode == KC_BSPC) return handle_backspace();
+
+  if (keycode == UC(SYM_DAKUTEN) || keycode == UC(SYM_HANDAKUTEN)) return handle_dakuten(keycode);
+
+  // Anything else ends the sequence and is typed as-is.
+  clear_pending();
+  if (keycode == UC(JP_NUM_1)) num_state = 1;
+  return pass_through(keycode);
+}

@@ -24,6 +24,10 @@ enum custom_keycodes {
     CT_SF_V,                /* Ctrl+Shift+V                          */
     GUI_DEL,                /* tap: GUI+Del   hold: Shift+GUI+Del    */
     GUI_INS,                /* tap: GUI+Ins   hold: Shift+GUI+Ins    */
+    FW_EXLM,                /* ！  fullwidth; above UC()'s 15 bits   */
+    FW_QUES,                /* ？                                    */
+    FW_AT,                  /* ＠                                    */
+    FW_HASH,                /* ＃                                    */
 };
 
 /* ------------------------------------------------------------------ */
@@ -34,20 +38,6 @@ enum custom_keycodes {
 #define SOFT_BLUE      0x00, 0x60, 0xFF
 #define PREDICT_DIM    0x40, 0x20, 0x00  /* fresh-state starters   */
 #define PREDICT_BRIGHT 0xFF, 0x90, 0x00  /* pending completions    */
-
-/* Bitmask flags for predict next-key set */
-#define NEXT_A    (1u << 0)
-#define NEXT_E    (1u << 1)
-#define NEXT_I    (1u << 2)
-#define NEXT_O    (1u << 3)
-#define NEXT_U    (1u << 4)
-#define NEXT_Y    (1u << 5)
-#define NEXT_H    (1u << 6)
-#define NEXT_S    (1u << 7)
-#define NEXT_Z    (1u << 8)
-#define NEXT_J    (1u << 9)
-#define NEXT_AEIOU        (NEXT_A|NEXT_E|NEXT_I|NEXT_O|NEXT_U)
-#define NEXT_ALL_STARTERS 0xFFFFu  /* sentinel: fresh/vowel-done state */
 
 /* ------------------------------------------------------------------ */
 /* State                                                                */
@@ -91,6 +81,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case GUI_DEL:
             if (record->event.pressed) {
+                ime_clear();
                 gui_del_timer = timer_read();
             } else {
                 if (timer_elapsed(gui_del_timer) < HOLD_DURATION) {
@@ -109,6 +100,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case GUI_INS:
             if (record->event.pressed) {
+                ime_clear();
                 gui_ins_timer = timer_read();
             } else {
                 if (timer_elapsed(gui_ins_timer) < HOLD_DURATION) {
@@ -130,23 +122,31 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (record->event.pressed) {
         switch (keycode) {
             case PAREN_IN:
+                ime_clear();
                 SEND_STRING("()" SS_TAP(X_LEFT));
                 return false;
             case SBRACK_IN:
+                ime_clear();
                 SEND_STRING("[]" SS_TAP(X_LEFT));
                 return false;
             case CT_SF_C:
+                ime_clear();
                 SEND_STRING(SS_LCTL(SS_LSFT("c")));
                 return false;
             case CT_SF_V:
+                ime_clear();
                 SEND_STRING(SS_LCTL(SS_LSFT("v")));
                 return false;
-            case KC_ESC:
+            case QK_GESC:
             case KC_ENT:
             case KC_SPC:
                 clear_lit();
                 ime_reset_word_count();
                 break;
+            case FW_EXLM:
+            case FW_QUES:
+            case FW_AT:
+            case FW_HASH:
             case UC(SYM_PERIOD):
             case UC(SYM_COMMA):
             case UC(SYM_KAKKO1):
@@ -164,6 +164,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 key_lit[record->event.key.row][record->event.key.col] = true;
                 break;
         }
+        switch (keycode) {
+            case FW_EXLM: ime_clear(); send_unicode_string("！"); return false;
+            case FW_QUES: ime_clear(); send_unicode_string("？"); return false;
+            case FW_AT:   ime_clear(); send_unicode_string("＠"); return false;
+            case FW_HASH: ime_clear(); send_unicode_string("＃"); return false;
+        }
     }
 
     return ime_process_record(keycode, record);
@@ -175,79 +181,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 extern const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS];
 
-static bool is_kana_starter(uint16_t kc, uint8_t layer) {
-    switch (kc) {
-        case KC_K: case KC_G: case KC_T: case KC_S: case KC_Z:
-        case KC_J: case KC_D: case KC_H: case KC_F: case KC_B:
-        case KC_P: case KC_M: case KC_R: case KC_W: case KC_Y: case KC_C:
-            return true;
-        case KC_V:
-            return (layer == KATAKANA);
-        default:
-            break;
+/* Keycode a key produces right now, resolving KC_TRNS through the active
+ * layers (so predictions still show while SUPP is held). */
+static uint16_t keycode_at(uint8_t row, uint8_t col) {
+    for (int8_t l = get_highest_layer(layer_state); l >= 0; l--) {
+        if (l != 0 && !layer_state_is(l)) continue;
+        uint16_t kc = pgm_read_word(&keymaps[l][row][col]);
+        if (kc != KC_TRNS) return kc;
     }
-    return (kc == UC(HRGN_A) || kc == UC(HRGN_E) || kc == UC(HRGN_I) ||
-            kc == UC(HRGN_O) || kc == UC(HRGN_U) || kc == UC(HRGN_N) ||
-            kc == UC(KTKN_A) || kc == UC(KTKN_E) || kc == UC(KTKN_I) ||
-            kc == UC(KTKN_O) || kc == UC(KTKN_U) || kc == UC(KTKN_N));
-}
-
-static uint16_t compute_predict(uint8_t layer) {
-    uint16_t prev, last;
-    ime_get_pending(&prev, &last);
-
-    /* 3-char state: consonant + extension already pressed */
-    if (last == KC_Y) {
-        switch (prev) {
-            case KC_K: case KC_G: case KC_N: case KC_H:
-            case KC_B: case KC_P: case KC_M: case KC_R: case KC_J:
-                return NEXT_A | NEXT_O | NEXT_U;
-            default: break;
-        }
-    }
-    if (last == KC_H && (prev == KC_S || prev == KC_C)) return NEXT_A|NEXT_I|NEXT_O|NEXT_U;
-    if (last == KC_S && prev == KC_T)                   return NEXT_U;
-    if (last == KC_Z && prev == KC_D)                   return NEXT_U;
-    if (last == KC_J && prev == KC_D)                   return NEXT_I;
-
-    /* 2-char state: first consonant just typed */
-    switch (last) {
-        case KC_K: case KC_G: case KC_H:
-        case KC_B: case KC_P: case KC_M: case KC_R:
-            return NEXT_AEIOU | NEXT_Y;
-        case KC_T: return NEXT_AEIOU | NEXT_S;
-        case KC_S: return NEXT_AEIOU | NEXT_H;
-        case KC_Z: return NEXT_AEIOU;
-        case KC_J: return NEXT_A|NEXT_I|NEXT_O|NEXT_U|NEXT_Y;
-        case KC_D: return NEXT_AEIOU | NEXT_Z | NEXT_J;
-        case KC_F: return NEXT_U;
-        case KC_W:
-            return (layer == KATAKANA) ? (NEXT_A|NEXT_E|NEXT_I|NEXT_O) : (NEXT_A|NEXT_O);
-        case KC_Y: return NEXT_A|NEXT_O|NEXT_U;
-        case KC_C: return NEXT_H;
-        case KC_V:
-            return (layer == KATAKANA) ? NEXT_AEIOU : 0;
-        default: break;
-    }
-    if (last == UC(HRGN_N) || last == UC(KTKN_N)) return NEXT_AEIOU | NEXT_Y;
-
-    /* Fresh state: buffer empty or last was a standalone vowel */
-    return NEXT_ALL_STARTERS;
-}
-
-static bool matches_predict(uint16_t kc, uint16_t predict, uint8_t layer) {
-    if (predict == NEXT_ALL_STARTERS)             return is_kana_starter(kc, layer);
-    if ((predict & NEXT_A) && (kc==UC(HRGN_A)||kc==UC(KTKN_A))) return true;
-    if ((predict & NEXT_E) && (kc==UC(HRGN_E)||kc==UC(KTKN_E))) return true;
-    if ((predict & NEXT_I) && (kc==UC(HRGN_I)||kc==UC(KTKN_I))) return true;
-    if ((predict & NEXT_O) && (kc==UC(HRGN_O)||kc==UC(KTKN_O))) return true;
-    if ((predict & NEXT_U) && (kc==UC(HRGN_U)||kc==UC(KTKN_U))) return true;
-    if ((predict & NEXT_Y) && kc==KC_Y)           return true;
-    if ((predict & NEXT_H) && kc==KC_H)           return true;
-    if ((predict & NEXT_S) && kc==KC_S)           return true;
-    if ((predict & NEXT_Z) && kc==KC_Z)           return true;
-    if ((predict & NEXT_J) && kc==KC_J)           return true;
-    return false;
+    return KC_NO;
 }
 
 static uint16_t count_digit_kc(uint8_t d) {
@@ -267,11 +209,11 @@ static uint16_t count_digit_kc(uint8_t d) {
 }
 
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
-    uint8_t  layer    = get_highest_layer(layer_state);
-    bool     is_ime   = (layer == HIRAGANA || layer == KATAKANA);
-    uint16_t predict  = is_ime ? compute_predict(layer) : 0;
-    bool     is_fresh = (predict == NEXT_ALL_STARTERS);
+    bool is_ime  = IS_LAYER_ON(HIRAGANA) || IS_LAYER_ON(KATAKANA);
+    bool pending = is_ime && ime_has_pending();
 
+    /* Prediction comes from the IME's own romaji table (ime_accepts), so the
+     * lights can't disagree with what the matcher will do. */
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
         for (uint8_t col = 0; col < MATRIX_COLS; col++) {
             uint8_t index = g_led_config.matrix_co[row][col];
@@ -282,16 +224,11 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 
             if (key_lit[row][col]) {
                 rgb_matrix_set_color(index, SOFT_BLUE);
-            } else if (is_ime) {
-                uint16_t kc = pgm_read_word(&keymaps[layer][row][col]);
-                if (matches_predict(kc, predict, layer)) {
-                    if (is_fresh) {
-                        rgb_matrix_set_color(index, PREDICT_DIM);
-                    } else {
-                        rgb_matrix_set_color(index, PREDICT_BRIGHT);
-                    }
+            } else if (is_ime && ime_accepts(keycode_at(row, col))) {
+                if (pending) {
+                    rgb_matrix_set_color(index, PREDICT_BRIGHT);
                 } else {
-                    rgb_matrix_set_color(index, RGB_OFF);
+                    rgb_matrix_set_color(index, PREDICT_DIM);
                 }
             } else {
                 rgb_matrix_set_color(index, RGB_OFF);
@@ -308,7 +245,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             for (uint8_t c2 = 0; c2 < MATRIX_COLS; c2++) {
                 uint8_t idx = g_led_config.matrix_co[r][c2];
                 if (idx < led_min || idx >= led_max || idx == NO_LED) continue;
-                uint16_t kc = pgm_read_word(&keymaps[layer][r][c2]);
+                uint16_t kc = keycode_at(r, c2);
                 if (tens > 0 && kc == count_digit_kc(tens)) {
                     rgb_matrix_set_color(idx, 0xFF, 0x00, 0x00);
                 } else if (kc == count_digit_kc(ones)) {
@@ -340,10 +277,12 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
  *
  * Left outer col  = modifier / layer keys
  * Left inner col  = DEL / BSPC / ENT  (rows 1-3 only)
- * Right inner col = BSPC / BSPC / ENT (rows 1-3 only)
- * Right outer col = PAREN_IN / SBRACK_IN / KC_QUOTE / KC_RSFT
- * Row 5 left fan  = GUI_DEL (tap: GUI+Del, hold: Shift+GUI+Del)
- * Row 5 right fan = GUI_INS (tap: GUI+Ins, hold: Shift+GUI+Ins)
+ * Right inner col = BSPC / BSPC / ENT (rows 1-3 only; row 2 unused on kana)
+ * QWERTY only:
+ *   Right outer col = PAREN_IN / SBRACK_IN / KC_QUOTE / KC_RSFT
+ *   Row 5 left fan  = GUI_DEL (tap: GUI+Del, hold: Shift+GUI+Del)
+ *   Row 5 right fan = GUI_INS (tap: GUI+Ins, hold: Shift+GUI+Ins)
+ * Kana layers: see the HIRAGANA diagram (KATAKANA is identical).
  */
 
 // clang-format off
@@ -375,10 +314,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 /* HIRAGANA
  * Numbers row outputs kanji numerals (ichi ni san...).
- * Vowel keys (A E I O U) output hiragana directly.
- * Consonant keys are captured by jp_ime.c which assembles syllables
- *   from the recent-key buffer.
- * N outputs n; followed by a vowel the IME corrects it.
+ * Vowel keys (A E I O U) and n output hiragana directly.
+ * Consonant keys are held by jp_ime.c as pending romaji until a vowel
+ *   completes them (see README for the romaji rules).
+ * X / L are the small-kana prefixes (xa -> ぁ, xtu -> っ, xwa -> ゎ).
  * Left Shift position = MO(HIRAGANA_SUPP) for small kana / symbols.
  *
  * ,--------------------------------------------------.           ,--------------------------------------------------.
@@ -386,20 +325,20 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |-------+------+------+------+------+------+-------|           |-------+------+------+------+------+------+-------|
  * | Tab   | ---  |   W  |  e   |   R  |   T  | Bspc  |           |  ---  |   Y  |   u  |  i   |  o   |   P  |  ---  |
  * |-------+------+------+------+------+------+-------|           |-------+------+------+------+------+------+-------|
- * | MO(6) |  a   |   S  |   D  |   F  |   G  | Enter |           | Enter |   H  |   J  |  K   | ---- |dakuten| ---  |
+ * | MO(6) |  a   |   S  |   D  |   F  |   G  | Enter |           | Enter |   H  |   J  |  K   |   L  |dakuten| ---  |
  * |-------+------+------+------+------+------|-------'           |-------+------+------+------+------+------+-------|
- * | MO(7) |   Z  |  --- |   C  |  --- |   B  |                           |   n  |   M  |  ,   |  .   |   /  |  ---  |
+ * | MO(7) |   Z  |   X  |   C  |   V  |   B  |                           |   n  |   M  |  、  |  。  |   /  |  ---  |
  * `-------+------+------+------+------+------+-------'           `-------+------+------+------+------+------+-------'
- * | Ctrl  | Alt  | GUI  |MO(6) |MO(5) |      + ----  |           |  ---  |      | ---- |lngvow| HRGA | KTKN |ENG_GO |
- * `-------+------+------+------+------+------+-------'           |-------`------+------+------+------+------+-------'
- *                              | Spc  |  --- | Pste  |           | Cut   | Copy | Enter|
+ * | Ctrl  | Alt  | GUI  |MO(6) |MO(5) |      |  ---  |           |  ---  |      |  --- |lngvow| HRGA | KTKN |ENG_GO |
+ * `-------+------+------+------+------+      +-------'           `-------+------+------+------+------+------+-------'
+ *                              | Spc  | Copy |Ct+Sf+C|           |Ct+Sf+V| Pste | Enter|
  *                              `------+------+-------'           `-------+------+------'
  */
 [HIRAGANA] = LAYOUT(
   QK_GESC          , UC(JP_NUM_1) , UC(JP_NUM_2) , UC(JP_NUM_3) , UC(JP_NUM_4) , UC(JP_NUM_5) , KC_DEL  ,        KC_BSPC        , UC(JP_NUM_6) , UC(JP_NUM_7) , UC(JP_NUM_8) , UC(JP_NUM_9) , UC(JP_NUM_10)   , KC_NO ,
   KC_TAB           , KC_NO        , KC_W         , UC(HRGN_E)   , KC_R         , KC_T         , KC_BSPC ,        KC_NO          , KC_Y         , UC(HRGN_U)   , UC(HRGN_I)   , UC(HRGN_O)   , KC_P            , KC_NO ,
-  MO(GUIS)         , UC(HRGN_A)   , KC_S         , KC_D         , KC_F         , KC_G         , KC_ENT  ,        KC_ENT         , KC_H         , KC_J         , KC_K         , KC_NO        , UC(SYM_DAKUTEN) , KC_NO ,
-  MO(HIRAGANA_SUPP), KC_Z         , KC_NO        , KC_C         , KC_NO        , KC_B         ,                  UC(HRGN_N)     , KC_M         , UC(SYM_COMMA), UC(SYM_PERIOD), KC_SLSH     , KC_NO           ,
+  MO(GUIS)         , UC(HRGN_A)   , KC_S         , KC_D         , KC_F         , KC_G         , KC_ENT  ,        KC_ENT         , KC_H         , KC_J         , KC_K         , KC_L         , UC(SYM_DAKUTEN) , KC_NO ,
+  MO(HIRAGANA_SUPP), KC_Z         , KC_X         , KC_C         , KC_V         , KC_B         ,                  UC(HRGN_N)     , KC_M         , UC(SYM_COMMA), UC(SYM_PERIOD), KC_SLSH     , KC_NO           ,
   KC_LCTL          , KC_LALT      , KC_LGUI      , MO(GUIS)     , MO(FUNCS)    ,                KC_NO   ,        KC_NO          ,                KC_NO        , UC(SYM_LONGVOW), HRGA_GO    , KTKN_GO         , ENG_GO,
                                            KC_SPC  , KC_COPY, CT_SF_C ,        CT_SF_V , KC_PSTE , KC_ENT
 ),
@@ -407,39 +346,40 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /* HIRAGANA_SUPP  (hold MO(HIRAGANA_SUPP) while in hiragana mode)
  * Provides small kana (small a e i o u, small tsu), bracketing symbols,
  * and supplemental punctuation. KC_TRNS falls through to HIRAGANA.
+ * Row 1: 〜 ！ ＠ ＃ ¥ ... 「 」    Row 4: 〈 〉 ？
  */
 [HIRAGANA_SUPP] = LAYOUT(
-  UC(SYM_TILDE) , UC(SYM_BANG)  , UC(SYM_AT)     , UC(SYM_HASH)  , UC(SYM_YEN)    , KC_NO          , KC_TRNS ,        KC_NO   , KC_NO         , KC_NO         , KC_NO         , UC(SYM_KAKKO1) , UC(SYM_KAKKO2)    , KC_NO   ,
+  UC(SYM_TILDE) , FW_EXLM       , FW_AT          , FW_HASH       , UC(SYM_YEN)    , KC_NO          , KC_TRNS ,        KC_NO   , KC_NO         , KC_NO         , KC_NO         , UC(SYM_KAKKO1) , UC(SYM_KAKKO2)    , KC_NO   ,
   KC_TRNS       , KC_TRNS       , KC_TRNS        , UC(HRGN_E_SM) , KC_TRNS        , UC(HRGN_TSU_SM), KC_TRNS ,        KC_TRNS , KC_TRNS       , UC(HRGN_U_SM) , UC(HRGN_I_SM) , UC(HRGN_O_SM)  , KC_TRNS           , KC_TRNS ,
   KC_NO         , UC(HRGN_A_SM) , KC_TRNS        , KC_TRNS       , KC_TRNS        , KC_TRNS        , KC_TRNS ,        KC_TRNS , KC_TRNS       , KC_TRNS       , KC_TRNS       , KC_TRNS        , UC(SYM_HANDAKUTEN), KC_TRNS ,
-  KC_TRNS       , KC_TRNS       , KC_TRNS        , KC_TRNS       , KC_TRNS        , KC_TRNS        ,                  UC(HRGN_N), KC_TRNS     , UC(SYM_KAKKO3), UC(SYM_KAKKO4), UC(SYM_INTERRO), KC_TRNS           ,
-  KC_LCTL       , KC_TRNS       , KC_TRNS        , KC_TRNS       , KC_TRNS        ,                  KC_TRNS ,        KC_NO   ,                KC_TRNS        , KC_TRNS       , UC_NEXT        , UC_NEXT           , ENG_GO  ,
+  KC_TRNS       , KC_TRNS       , KC_TRNS        , KC_TRNS       , KC_TRNS        , KC_TRNS        ,                  UC(HRGN_N), KC_TRNS     , UC(SYM_KAKKO3), UC(SYM_KAKKO4), FW_QUES        , KC_TRNS           ,
+  KC_LCTL       , KC_TRNS       , KC_TRNS        , KC_TRNS       , KC_TRNS        ,                  KC_TRNS ,        KC_NO   ,                KC_TRNS        , UC(SYM_LONGVOW), UC_PREV       , UC_NEXT           , ENG_GO  ,
                                                    KC_TRNS       , KC_TRNS        , KC_TRNS        ,        KC_TRNS , KC_TRNS , KC_TRNS
 ),
 
 /* KATAKANA
- * Same consonant/vowel split as HIRAGANA but with katakana codepoints.
+ * Same layout as HIRAGANA with katakana vowels / ン; consonant sequences
+ * produce katakana. V (ヴ) and X / L (small kana) work in both layers.
  * Left Shift position = MO(KATAKANA_SUPP).
- * V-series (vu, va...) is active in katakana only.
  */
 [KATAKANA] = LAYOUT(
-  QK_GESC          , UC(JP_NUM_1) , UC(JP_NUM_2) , UC(JP_NUM_3) , UC(JP_NUM_4) , UC(JP_NUM_5) , KC_DEL  ,        KC_NO          , UC(JP_NUM_6) , UC(JP_NUM_7) , UC(JP_NUM_8) , UC(JP_NUM_9) , UC(JP_NUM_10)   , KC_NO ,
+  QK_GESC          , UC(JP_NUM_1) , UC(JP_NUM_2) , UC(JP_NUM_3) , UC(JP_NUM_4) , UC(JP_NUM_5) , KC_DEL  ,        KC_BSPC        , UC(JP_NUM_6) , UC(JP_NUM_7) , UC(JP_NUM_8) , UC(JP_NUM_9) , UC(JP_NUM_10)   , KC_NO ,
   KC_TAB           , KC_NO        , KC_W         , UC(KTKN_E)   , KC_R         , KC_T         , KC_BSPC ,        KC_NO          , KC_Y         , UC(KTKN_U)   , UC(KTKN_I)   , UC(KTKN_O)   , KC_P            , KC_NO ,
-  MO(GUIS)         , UC(KTKN_A)   , KC_S         , KC_D         , KC_F         , KC_G         , KC_ENT  ,        KC_NO          , KC_H         , KC_J         , KC_K         , KC_NO        , UC(SYM_DAKUTEN) , KC_NO ,
-  MO(KATAKANA_SUPP), KC_Z         , KC_NO        , KC_C         , KC_V         , KC_B         ,                  UC(KTKN_N)     , KC_M         , UC(SYM_COMMA), UC(SYM_PERIOD), KC_SLSH     , KC_NO           ,
+  MO(GUIS)         , UC(KTKN_A)   , KC_S         , KC_D         , KC_F         , KC_G         , KC_ENT  ,        KC_ENT         , KC_H         , KC_J         , KC_K         , KC_L         , UC(SYM_DAKUTEN) , KC_NO ,
+  MO(KATAKANA_SUPP), KC_Z         , KC_X         , KC_C         , KC_V         , KC_B         ,                  UC(KTKN_N)     , KC_M         , UC(SYM_COMMA), UC(SYM_PERIOD), KC_SLSH     , KC_NO           ,
   KC_LCTL          , KC_LALT      , KC_LGUI      , MO(GUIS)     , MO(FUNCS)    ,               KC_NO   ,        KC_NO          ,               KC_NO         , UC(SYM_LONGVOW), HRGA_GO     , KTKN_GO         , ENG_GO,
                                            KC_SPC  , KC_COPY, CT_SF_C ,        CT_SF_V , KC_PSTE , KC_ENT
 ),
 
 /* KATAKANA_SUPP  (hold MO(KATAKANA_SUPP) while in katakana mode)
- * Small katakana and supplemental symbols.
+ * Small katakana and supplemental symbols; same positions as HIRAGANA_SUPP.
  */
 [KATAKANA_SUPP] = LAYOUT(
-  UC(SYM_TILDE) , UC(SYM_BANG)  , UC(SYM_AT)     , UC(SYM_HASH)  , UC(SYM_YEN)    , KC_NO          , KC_TRNS ,        KC_NO   , KC_NO         , KC_NO         , KC_NO         , UC(SYM_KAKKO1) , UC(SYM_KAKKO2)    , KC_NO   ,
+  UC(SYM_TILDE) , FW_EXLM       , FW_AT          , FW_HASH       , UC(SYM_YEN)    , KC_NO          , KC_TRNS ,        KC_NO   , KC_NO         , KC_NO         , KC_NO         , UC(SYM_KAKKO1) , UC(SYM_KAKKO2)    , KC_NO   ,
   KC_TRNS       , KC_TRNS       , KC_TRNS        , UC(KTKN_E_SM) , KC_TRNS        , UC(KTKN_TSU_SM), KC_TRNS ,        KC_TRNS , KC_TRNS       , UC(KTKN_U_SM) , UC(KTKN_I_SM) , UC(KTKN_O_SM)  , KC_TRNS           , KC_TRNS ,
   KC_NO         , UC(KTKN_A_SM) , KC_TRNS        , KC_TRNS       , KC_TRNS        , KC_TRNS        , KC_TRNS ,        KC_TRNS , KC_TRNS       , KC_TRNS       , KC_TRNS       , KC_TRNS        , UC(SYM_HANDAKUTEN), KC_TRNS ,
-  KC_TRNS       , KC_TRNS       , KC_TRNS        , KC_TRNS       , KC_TRNS        , KC_TRNS        ,                  UC(KTKN_N), KC_TRNS     , UC(SYM_KAKKO3), UC(SYM_KAKKO4), UC(SYM_INTERRO), KC_TRNS ,
-  KC_LCTL       , KC_TRNS       , KC_TRNS        , KC_TRNS       , KC_TRNS        ,                  KC_TRNS ,        KC_NO   ,                KC_TRNS        , UC(SYM_LONGVOW), UC_NEXT       , UC_NEXT           , ENG_GO  ,
+  KC_TRNS       , KC_TRNS       , KC_TRNS        , KC_TRNS       , KC_TRNS        , KC_TRNS        ,                  UC(KTKN_N), KC_TRNS     , UC(SYM_KAKKO3), UC(SYM_KAKKO4), FW_QUES        , KC_TRNS ,
+  KC_LCTL       , KC_TRNS       , KC_TRNS        , KC_TRNS       , KC_TRNS        ,                  KC_TRNS ,        KC_NO   ,                KC_TRNS        , UC(SYM_LONGVOW), UC_PREV       , UC_NEXT           , ENG_GO  ,
                                                    KC_TRNS       , KC_TRNS        , KC_TRNS        ,        KC_TRNS , KC_TRNS , KC_TRNS
 ),
 

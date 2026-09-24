@@ -1,38 +1,76 @@
-Multilingual Preonic Setup
+Multilingual Moonlander Setup
+=============================
 
-Default language: ENG-US
+A ZSA Moonlander keymap with a firmware romaji→kana IME: type hiragana or
+katakana straight from the keyboard, with no OS input method.
 
-* Restore English Default Layer: SHIFT+INS
+Default language: ENG-US (QWERTY).
 
-```
-,-----------------------------------------------------------------------------------.
-| Esc  |   1  |   2  |   3  |   4  |   5  | Del  |   6  |   7  |   8  |   9  |  0   |
-|------+------+------+------+------+------+------+------+------+------+------+------|
-| Tab  |   Q  |   W  |   E  |   R  |   T  | Bksp |   Y  |   U  |   I  |   O  |  P   |
-|------+------+------+------+------+-------------+------+------+------+------+------|
-| MO(5)|   A  |   S  |   D  |   F  |   G  | Ent  |   H  |   J  |   K  |   L  |  ;   |
-|------+------+------+------+------+------|------+------+------+------+------+------|
-| Shift|   Z  |   X  |   C  |   V  |   B  | Tab  |   N  |   M  |   ,  |   .  |  /   |
-|------+------+------+------+------+------+------+------+------+------+------+------|
-| Ctrl | Alt  | GUI  | LT(5)| MO(6)|    Space    |   +  |   -  |  Del |  Ins | Ent  |
-`-----------------------------------------------------------------------------------'
-```
+## Switching layers
 
-Key combinations to engage JP Hiragana and Katakana:
+Bottom row, right hand (HRGA / KTKN are also under MO(6)):
 
- * Hiragana Layer: GUI+DEL
- * Katakana Layer: GUI+INS
- * Input Method Switch (Linux/Win): SHIFT+DEL
+| key      | layer                  |
+|----------|------------------------|
+| HRGA     | Hiragana               |
+| KTKN     | Katakana               |
+| ENG_GO   | back to QWERTY         |
 
-Usage of the Hiragana/Katakana Layers:
-- Japanese numerals along top row are 1-10 (いち-十)
-- Shift+9, Shift+0 (parens) will create 「」
-- Shift+<, Shift+> (square brackets) will create〈〉
-- PLACE NUMBERS e.g., 10, 100, 1000 can be written in kanji
-     by using the 1e_ syntax (press keys sequentially): 1 -> e -> _
-     with _ representing how many zeroes in the number:
-- 1e1 -> 十 (10), 1e2 -> 百 (100), 1e8 -> 億
-- The only exception: 1e0 -> 〇
-     (十 is far more common than 〇, otherwise these would be reversed
-      and 〇 would be on the 0 and 1e1 would be 10)
-- CHARACTERS e.g., "ha" -> は , "pi" -> ピ
+On the kana layers the left Shift position is **SUPP** (hold): small kana,
+brackets and symbols. On SUPP, HRGA/KTKN become UC_PREV/UC_NEXT to cycle the
+Unicode input mode (Linux / Windows).
+
+## Typing kana
+
+Vowels (あ い う え お) and ん are their own keys and type immediately.
+Consonants wait for a vowel; the LEDs show which keys continue the pending
+sequence (bright) or can start one (dim). Romaji follows the usual Google /
+Microsoft IME rules, the same in both layers:
+
+- `ka` → か, `kya` → きゃ, `shi`/`si` → し, `chi`/`ti` → ち, `tsu`/`tu` → つ,
+  `ji`/`zi` → じ, `fu`/`hu` → ふ, `di` → ぢ, `du` → づ (`dzu`, `dji` also work)
+- doubled consonant → small っ: `kka` → っか, `ssha` → っしゃ, `tcha` → っちゃ
+- loanword forms: `thi` → ティ, `dhi` → ディ, `thu` → テュ, `dhu` → デュ,
+  `twu` → トゥ, `dwu` → ドゥ, `fa` → ファ, `she` → シェ, `che` → チェ,
+  `je` → ジェ, `wi` → ウィ, `we` → ウェ, `who` → ウォ, `ye` → イェ, `va` → ヴァ
+- `wo` → を / ヲ, `wyi` → ゐ, `wye` → ゑ
+- small kana with the X or L prefix: `xa` → ぁ, `xya` → ゃ, `xtu` → っ,
+  `xwa` → ゎ, `xka` → ゕ, `xke` → ゖ (or hold SUPP; `y` + SUPP-ぁ → ゃ)
+
+**ん** types immediately. A following vowel or `y` turns it into the な row
+(ん あ → な, ん y あ → にゃ). Press ん twice to confirm it and keep it:
+ん ん あ → んあ, so こんな is こ ん ん ん あ.
+
+**Backspace** while a consonant is pending deletes the pending letter, not
+the text on screen. Any other key (Space, Enter, punctuation…) drops pending
+consonants and types normally. Pending consonants also expire after 3 s.
+
+**Dakuten / handakuten** (the key right of L, and SUPP + that key) voice the
+kana you just typed: つ ゛ → づ, は ゜ → ぱ, う ゛ → ゔ. After a kana with no
+voiced form they type the combining mark.
+
+## Numbers
+
+- The top row types kanji numerals 一 … 九 十.
+- Place values use `1 e _`, pressed in sequence: `1e1` → 十, `1e2` → 百,
+  `1e3` → 千, `1e4` → 万, `1e8` → 億, and `1ew` → 兆 (10¹² needs two keys).
+- The one exception is `1e0` → 〇 (十 is far more common than 〇, so 十 keeps
+  the 0 key and 〇 gets the otherwise meaningless 1e0).
+- Any other key after 一え leaves 一え as typed.
+
+## Symbols (hold SUPP)
+
+- 〜 ！ ＠ ＃ ¥ on the number row, 「 」 on 9 / 0
+- 〈 〉 on 、 / 。, ？ on /
+- small ぁ ぃ ぅ ぇ ぉ っ on the vowel keys and T
+
+## Counter
+
+While on a kana layer, the number-row LEDs show how many kana are in the
+current word (red: tens / single digit, blue: ones). Space, Enter, Esc,
+punctuation and layer switches reset it.
+
+## Tests
+
+`test/run.sh` compiles `jp_ime.c` against a small QMK stub on the host and
+replays key sequences (needs only gcc).

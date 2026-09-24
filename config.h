@@ -69,11 +69,9 @@
 #define JP_NUM_10 0x5341
 
 // Symbols
+// Fullwidth ！？＠＃ (U+FF01 etc.) are above UC()'s 15-bit limit; they are
+// custom keycodes in keymap.c instead.
 #define SYM_TILDE      0x301C
-#define SYM_BANG       0x0021
-#define SYM_INTERRO    0x003F
-#define SYM_AT         0x0040
-#define SYM_HASH       0x0023
 #define SYM_YEN        0x00A5
 #define SYM_KAKKO1     0x300C
 #define SYM_KAKKO2     0x300D

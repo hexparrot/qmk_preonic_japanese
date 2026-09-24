@@ -9,8 +9,7 @@
 #define HIRAGANA_SUPP 7
 #define KATAKANA_SUPP 8
 
-#define TIMEOUT_MS 3000  // Timeout in milliseconds.
-#define RECENT_SIZE 3    // Number of keys in `recent` buffer.
+#define TIMEOUT_MS 3000  // Pending romaji is dropped after this long.
 
 enum {
   HRGA_GO = SAFE_RANGE,
@@ -23,12 +22,15 @@ enum {
 void     ime_matrix_scan(void);
 bool     ime_process_record(uint16_t keycode, keyrecord_t *record);
 
-// Exposed so keymap.c can call clear if needed
-void     clear_recent_keys(void);
+// Drops any pending romaji / ん / 1e state. Call from keycodes that
+// return before ime_process_record() sees them.
+void     ime_clear(void);
 
-// Exposes the two most-recent pending keys for RGB prediction.
-// prev = recent[RECENT_SIZE-2], last = recent[RECENT_SIZE-1]
-void     ime_get_pending(uint16_t *prev, uint16_t *last);
+// RGB prediction. ime_has_pending() is true while a sequence is in
+// progress; ime_accepts(kc) is true if pressing kc now would start
+// (nothing pending) or continue/complete (something pending) a kana.
+bool     ime_has_pending(void);
+bool     ime_accepts(uint16_t keycode);
 
 // Committed-kana word length counter.
 void     ime_reset_word_count(void);
