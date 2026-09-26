@@ -13,14 +13,44 @@ Conventions chosen:
 - Pressing ん a second time confirms the first one.
 - SUPP symbols are fullwidth.
 
+## 2026-09-26: layout pass, counter removed
+
+- The kana counter (number-row LEDs, `ime_get_word_count`, the `count_*`
+  helpers, the `HC()` tests) is gone. Nothing lights up from counting; the
+  only lights are the blue trail and the romaji prediction. §7 below is
+  history.
+- Layers are a gap-free `enum layers` (QWERTY, HIRAGANA, KATAKANA,
+  HIRAGANA_SUPP, KATAKANA_SUPP, FUNCS, GUIS); comments use the names, not
+  `MO(5)`/`MO(6)`. `_JP_IME_SAFE_END` lost its reserved-identifier
+  underscore.
+- Kana layers: ー moved from `=` to `-`; 「 」 on the right outer column
+  where QWERTY has `()` `[]`; ゜ on the `'` position (still SUPP+`;` too);
+  right-inner row 2 is Bspc like QWERTY. Shared chrome (Esc, Tab, modifiers,
+  thumbs) is `KC_TRNS` instead of a copy of QWERTY. Fans and right Shift are
+  still off.
+- SUPP layers: blanks are uniformly `KC_TRNS`; the redundant explicit
+  `KC_LCTL`, `ENG_GO`, ん and ー are gone.
+- FUNCS keeps Space. GUIS uses `KC_TRNS` at the `'` position instead of
+  duplicating it. `LGUI(KC_END)` on GUIS was left alone, so `ENG_GO` is still
+  not on that layer.
+- `keycode_at` uses `layer_switch_get_layer` + `keymap_key_to_keycode`
+  instead of a hand-rolled walk over `keymaps[]`. `GUI_DEL`/`GUI_INS` share
+  one tap/hold helper.
+- `test/run.sh` now also syntax-checks `keymap.c` against
+  `test/keymap_stub.h`, so that check is repeatable.
+
+Not changed (needs a decision): `/` still types ASCII on the kana layers;
+`kwa`/`gwa`/`qa` (くぁ, ぐぁ) are not in the romaji table; `SYM_YEN` is
+halfwidth U+00A5 because fullwidth ￥ is above the `UC()` range.
+
 ## Still open
 
 - **Not built on hardware.** No QMK tree is installed on this machine.
   `jp_ime.c` is tested on the host against a stub, and `keymap.c` is only
-  syntax-checked against a generated stub. Run `qmk compile` and flash
+  syntax-checked against `test/keymap_stub.h`. Run `qmk compile` and flash
   before trusting it. These QMK names are assumed rather than verified:
   `QK_MOMENTARY`/`QK_MOMENTARY_MAX`, `QK_UNICODE`, `UC_PREV`,
-  `layer_state_is`, `get_highest_layer`.
+  `layer_switch_get_layer`, `keymap_key_to_keycode`.
 
 ## 1. Wrong output — fixed
 
@@ -98,7 +128,7 @@ hiragana too (ゔ).
 `ime_accepts(kc)`, which runs the matcher's own table. Keys are looked up
 through KC_TRNS, so predictions stay on while SUPP is held.
 
-## 7. Kana counter — fixed
+## 7. Kana counter — fixed (since removed, see top)
 
 - When ん turns into a な-row kana, the ん is subtracted, so な counts 1 and
   にゃ counts 2.

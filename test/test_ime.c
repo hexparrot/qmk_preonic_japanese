@@ -104,27 +104,21 @@ static void reset(bool kata) {
   layer_state = 0;
   layer_on(kata ? KATAKANA : HIRAGANA);
   ime_clear();
-  ime_reset_word_count();
   mods = 0;
   screen[0] = 0;
 }
 
-static void check(const char *keys, const char *want, bool kata, int want_count) {
+static void check(const char *keys, const char *want, bool kata) {
   reset(kata);
   type(keys, kata);
   total++;
-  bool ok = strcmp(screen, want) == 0;
-  bool cnt_ok = want_count < 0 || ime_get_word_count() == want_count;
-  if (!ok || !cnt_ok) {
+  if (strcmp(screen, want) != 0) {
     fails++;
-    printf("FAIL %s %-12s got \"%s\" want \"%s\"", kata ? "kata" : "hira", keys, screen, want);
-    if (!cnt_ok) printf(" count %d want %d", ime_get_word_count(), want_count);
-    printf("\n");
+    printf("FAIL %s %-12s got \"%s\" want \"%s\"\n", kata ? "kata" : "hira", keys, screen, want);
   }
 }
-#define H(k, w)       check(k, w, false, -1)
-#define K(k, w)       check(k, w, true, -1)
-#define HC(k, w, c)   check(k, w, false, c)
+#define H(k, w)       check(k, w, false)
+#define K(k, w)       check(k, w, true)
 
 int main(void) {
   // §1 wrong output
@@ -184,10 +178,8 @@ int main(void) {
   H("dhi", "でぃ");  H("twu", "とぅ");
   // timeout
   H("k=a", "あ");
-  // counter
-  HC("na", "な", 1);  HC("nya", "にゃ", 2);  HC("kka", "っか", 2);
-  HC("ka<", "", 0);  HC("1e2", "百", 0);  HC("tu!", "づ", 1);  HC("a!", "あ\xe3\x82\x99", 1);
-  HC("nn", "ん", 1);  HC("ka~", "かー", 2);
+  // formerly counter cases; still useful as output checks
+  H("kka", "っか");  H("tu!", "づ");  H("nn", "ん");  H("ka~", "かー");
 
   // Ctrl chord ends a sequence
   reset(false); type("k", false); mods = MOD_MASK_CTRL; press(KC_C); mods = 0; type("a", false);

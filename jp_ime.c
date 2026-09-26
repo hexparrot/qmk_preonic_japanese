@@ -87,18 +87,6 @@ static bool     n_shown    = false;  // pending[0] == 'n' is an ん already on s
 static uint8_t  num_state  = 0;      // 1 after 一, 2 after 一え
 static uint32_t last_kana  = 0;      // last kana on screen, for dakuten
 static uint16_t deadline   = 0;
-static uint8_t  ime_char_count = 0;
-
-/* ---------------- counter ---------------- */
-
-static void count_add(uint8_t n) {
-  ime_char_count = (ime_char_count > 255 - n) ? 255 : ime_char_count + n;
-}
-static void count_sub(uint8_t n) {
-  ime_char_count = (ime_char_count > n) ? ime_char_count - n : 0;
-}
-void    ime_reset_word_count(void) { ime_char_count = 0; }
-uint8_t ime_get_word_count(void)   { return ime_char_count; }
 
 /* ---------------- state ---------------- */
 
@@ -147,23 +135,18 @@ static void emit_kana(const char *hira, bool sokuon, bool replace_n) {
   char     buf[16];
   char    *o    = buf;
   bool     kata = is_katakana_layer();
-  uint8_t  n    = 0;
   uint32_t cp   = 0;
 
-  if (sokuon) { o = utf8_put(o, kata ? 0x30C3 : 0x3063); n++; }
-  for (const char *s = hira; *s; n++) {
+  if (sokuon) o = utf8_put(o, kata ? 0x30C3 : 0x3063);
+  for (const char *s = hira; *s;) {
     cp = utf8_next(&s);
     if (kata && cp >= 0x3041 && cp <= 0x3096) cp += 0x60;
     o = utf8_put(o, cp);
   }
   *o = 0;
 
-  if (replace_n) {
-    tap_code(KC_BSPC);
-    count_sub(1);
-  }
+  if (replace_n) tap_code(KC_BSPC);
   send_unicode_string(buf);
-  count_add(n);
   last_kana = cp;
 }
 
@@ -281,7 +264,8 @@ static bool is_uc(uint16_t kc) {
 static uint32_t uc_codepoint(uint16_t kc) {
   return kc - QK_UNICODE;
 }
-static bool is_counted_kana(uint32_t cp) {
+// Kana that dakuten / handakuten may act on (not the combining marks).
+static bool is_kana(uint32_t cp) {
   return cp >= 0x3041 && cp <= 0x30FF && cp != 0x3099 && cp != 0x309A;
 }
 
@@ -331,14 +315,9 @@ bool ime_accepts(uint16_t kc) {
 
 /* ---------------- key handling ---------------- */
 
-// Passes a key through to QMK, keeping the counter and dakuten state right.
+// Passes a key through to QMK, keeping the dakuten state right.
 static bool pass_through(uint16_t kc) {
-  if (is_uc(kc) && is_counted_kana(uc_codepoint(kc))) {
-    count_add(1);
-    last_kana = uc_codepoint(kc);
-  } else {
-    last_kana = 0;
-  }
+  last_kana = (is_uc(kc) && is_kana(uc_codepoint(kc))) ? uc_codepoint(kc) : 0;
   return true;
 }
 
@@ -393,7 +372,6 @@ static bool handle_backspace(void) {
     return false;
   }
   clear_pending();
-  count_sub(1);
   last_kana = 0;
   return true;
 }
@@ -470,7 +448,6 @@ bool ime_process_record(uint16_t keycode, keyrecord_t *record) {
     if (suffix) {
       tap_code(KC_BSPC);
       tap_code(KC_BSPC);
-      count_sub(1);  // え (一 is not counted)
       send_unicode_string(suffix);
       last_kana = 0;
       return false;
